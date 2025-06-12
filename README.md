@@ -13,6 +13,11 @@ This package provides utility classes and functions to assist with test automati
 - **Runtime utilities**: Functions to execute test binaries and parse their output.
 
 ## Installation
+You can create and activate a virtual environment for the development purposes:
+```sh
+python -m venv .venv
+source .venv/bin/activate
+```
 
 You can install the development dependencies using:
 

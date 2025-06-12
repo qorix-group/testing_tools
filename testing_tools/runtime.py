@@ -3,7 +3,6 @@ import os
 from subprocess import PIPE, Popen, TimeoutExpired
 
 TEST_BIN_ENV_VAR = "TEST_BINARY_PATH"
-THREAD_COUNT = 4
 EXECUTE_TIMEOUT_S = 5
 
 
