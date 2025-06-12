@@ -1,0 +1,21 @@
+[project]
+name = "testing-tools"
+version = "0.1.0"
+dependencies = []
+requires-python = ">=3.12"
+authors = [
+  {name = "Igor Ostrowski", email = "igor.ostrowski.ext@qorix.ai"},
+  {name = "Piotr Korkus", email = "piotr.korkus.ext@qorix.ai"},
+]
+description = "Test framework tools and helpers"
+readme = "README.md"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
