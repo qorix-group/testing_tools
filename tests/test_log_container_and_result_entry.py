@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from testing_tools.log_container import LogContainer
-from testing_tools.result_entry import ResultEntry, ResultOrchestration
+from qtesting_tools.log_container import LogContainer
+from qtesting_tools.result_entry import ResultEntry, ResultOrchestration
 
 
 def test_log_container_add_and_get_logs():

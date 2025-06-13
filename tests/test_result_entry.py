@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from testing_tools.result_entry import ResultEntry, ResultOrchestration
+from qtesting_tools.result_entry import ResultEntry, ResultOrchestration
 
 
 def test_result_entry_creation_and_properties():
