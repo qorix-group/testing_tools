@@ -19,15 +19,11 @@ class ResultEntry:
 
     def _add_attribute(self, name: str, value: any) -> None:
         name = self._camel_case_to_snake_case(name)
-        try:
-            _ = getattr(self, name)
+        if hasattr(self, name):
             raise RuntimeError(f"Tries to add duplicated field {name} to the ResultEntry, test issue!")
-        except AttributeError:
-            setattr(self, name, value)  # Attribute does not exist as expected
+        else:
+            setattr(self, name, value)
 
     def __str__(self) -> str:
-        output = "ResultEntry("
-        for attr in vars(self):
-            output += f"{attr}={getattr(self, attr)}, "
-        output += ")"
-        return output
+        members = [f"{attr}={getattr(self, attr)}" for attr in vars(self)]
+        return f"ResultEntry({', '.join(members)})"
