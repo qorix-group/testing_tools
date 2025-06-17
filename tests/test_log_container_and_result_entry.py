@@ -1,13 +1,13 @@
 from datetime import datetime
 
 from testing_tools.log_container import LogContainer
-from testing_tools.result_entry import ResultEntry, ResultOrchestration
+from testing_tools.result_entry import ResultEntry
 
 
 def test_log_container_add_and_get_logs():
     lc = LogContainer()
     lc.add_log(
-        ResultOrchestration(
+        ResultEntry(
             {
                 "timestamp": "2025-06-05T07:46:11.796134Z",
                 "level": "DEBUG",
@@ -45,7 +45,7 @@ def test_log_container_add_and_get_logs():
 def test_log_container_find_log():
     lc = LogContainer()
     lc.add_log(
-        ResultOrchestration(
+        ResultEntry(
             {
                 "timestamp": "2025-06-05T07:46:11.796134Z",
                 "level": "DEBUG",
@@ -75,7 +75,7 @@ def test_log_container_find_log():
 def test_log_container_get_logs_by_field():
     lc = LogContainer()
     lc.add_log(
-        ResultOrchestration(
+        ResultEntry(
             {
                 "timestamp": "2025-06-05T07:46:11.796134Z",
                 "level": "DEBUG",
@@ -86,7 +86,7 @@ def test_log_container_get_logs_by_field():
         )
     )
     lc.add_log(
-        ResultOrchestration(
+        ResultEntry(
             {
                 "timestamp": "2025-06-05T07:46:11.796134Z",
                 "level": "DEBUG",

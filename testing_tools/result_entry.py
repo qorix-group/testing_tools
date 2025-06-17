@@ -1,48 +1,29 @@
+import re
 from datetime import datetime
 from typing import Dict
 
 
 class ResultEntry:
     def __init__(self, json_message: Dict):
-        self.timestamp = datetime.fromisoformat(json_message.get("timestamp"))
-        self.target = json_message.get("target")
-        self.level = json_message.get("level")
-        self.thread_id = json_message.get("threadId")
+        for key in json_message:
+            if key == "timestamp":
+                self._add_attribute(key, datetime.fromisoformat(json_message[key]))
+            elif key == "fields":
+                for inner_key in json_message[key]:
+                    self._add_attribute(inner_key, json_message[key][inner_key])
+            else:
+                self._add_attribute(key, json_message[key])
+
+    def _camel_case_to_snake_case(self, name: str) -> str:
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+    def _add_attribute(self, name: str, value: any) -> None:
+        name = self._camel_case_to_snake_case(name)
+        if hasattr(self, name):
+            raise RuntimeError(f"Tries to add duplicated field {name} to the ResultEntry, test issue!")
+        else:
+            setattr(self, name, value)
 
     def __str__(self) -> str:
-        return f"ResultEntry(timestamp={self.timestamp}, target={self.target}, level={self.level}, thread_id={self.thread_id})"
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, ResultEntry):
-            return NotImplemented
-        return self.timestamp == other.timestamp
-
-    def __lt__(self, other) -> bool:
-        if not isinstance(other, ResultEntry):
-            return NotImplemented
-        return self.timestamp < other.timestamp
-
-    def __gt__(self, other) -> bool:
-        if not isinstance(other, ResultEntry):
-            return NotImplemented
-        return self.timestamp > other.timestamp
-
-
-class ResultRuntime(ResultEntry):
-    def __init__(self, json_message: Dict):
-        super().__init__(json_message)
-        self.id = json_message.get("fields").get("id")
-        self.location = json_message.get("fields").get("location")
-        self.message = json_message.get("fields").get("message")
-
-    def __str__(self) -> str:
-        return f"ResultRuntime(timestamp={self.timestamp}, target={self.target}, level={self.level}, thread_id={self.thread_id}, id={self.id}, location={self.location}, message={self.message})"
-
-
-class ResultOrchestration(ResultEntry):
-    def __init__(self, json_message: Dict):
-        super().__init__(json_message)
-        self.message = json_message.get("fields").get("message")
-
-    def __str__(self) -> str:
-        return f"ResultOrchestration(timestamp={self.timestamp}, target={self.target}, level={self.level}, thread_id={self.thread_id}, message={self.message})"
+        members = [f"{attr}={getattr(self, attr)}" for attr in vars(self)]
+        return f"ResultEntry({', '.join(members)})"
