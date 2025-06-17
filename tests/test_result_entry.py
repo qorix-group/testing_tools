@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from testing_tools.result_entry import ResultEntry, ResultOrchestration
+from testing_tools.result_entry import ResultEntry
 
 
 def test_result_entry_creation_and_properties():
@@ -20,7 +20,7 @@ def test_result_entry_creation_and_properties():
 
 
 def test_result_orchestration_creation_and_properties():
-    entry = ResultOrchestration(
+    entry = ResultEntry(
         {
             "timestamp": "2025-06-05T07:46:11.796134Z",
             "level": "DEBUG",
