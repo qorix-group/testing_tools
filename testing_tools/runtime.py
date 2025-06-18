@@ -1,9 +1,11 @@
 import json
 import os
+from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
 
 TEST_BIN_ENV_VAR = "TEST_BINARY_PATH"
 EXECUTE_TIMEOUT_S = 5
+BUILD_TIMEOUT_S = 180
 
 
 def execute(test_config, test_case_name):
@@ -44,3 +46,28 @@ def execute_and_parse(test_config, test_case_name, expect_hang):
     messages.sort(key=lambda m: m["timestamp"])
 
     return messages
+
+
+def build_rust_scenarios(path_to_scenarios: Path | str) -> Path:
+    """
+    Build the rust test scenarios from the given path.
+    """
+    if not isinstance(path_to_scenarios, Path):
+        path_to_scenarios = Path(path_to_scenarios)
+    path_to_scenarios.resolve()
+
+    path_to_manifest = path_to_scenarios / "Cargo.toml"
+    if not path_to_manifest.exists():
+        raise FileNotFoundError(
+            f"Cargo.toml not found at {path_to_manifest}. Please provide a valid path to the rust test scenarios."
+        )
+
+    command = ["cargo", "build", "--manifest-path", path_to_manifest]
+    p = Popen(command, stdout=PIPE, stderr=PIPE, text=True)
+
+    outs, errs = p.communicate(timeout=BUILD_TIMEOUT_S)
+
+    if p.returncode != 0:
+        raise RuntimeError(f"Building rust test scenarios failed with {p.returncode}! stdout: {outs}; stderr: {errs}")
+
+    return path_to_scenarios / "target" / "debug" / "rust_test_scenarios"
