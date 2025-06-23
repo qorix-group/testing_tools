@@ -1,4 +1,6 @@
 import re
+from itertools import groupby
+from operator import attrgetter
 from typing import Generator
 
 from .result_entry import ResultEntry
@@ -110,3 +112,13 @@ class LogContainer:
         """
         regex = re.compile(pattern)
         self.logs = [log for log in self.logs if not regex.search(getattr(log, field, ""))]
+
+    def group_by(self, attribute: str) -> dict:
+        """
+        Group ResultEntry messages by a specified attribute.
+        Returns a dictionary where the keys are the unique values of the attribute,
+        and the values are LogContainer instances containing the grouped logs.
+        """
+        sorted_logs_by_attr = sorted(self.logs, key=attrgetter(attribute))
+        grouped = groupby(sorted_logs_by_attr, key=attrgetter(attribute))
+        return {key: LogContainer.from_entries(list(group)) for key, group in grouped}
