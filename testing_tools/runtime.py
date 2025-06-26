@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import timedelta
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
 
@@ -40,9 +41,14 @@ def execute_and_parse(test_config, test_case_name, expect_hang):
     raw_messages = outs.strip().split("\n")
     # Filter non-json messages
     raw_messages = [message for message in raw_messages if message.startswith("{") and message.endswith("}")]
+    messages = [json.loads(message) for message in raw_messages]
+
+    # Convert timestamp from microseconds to timedelta
+    messages = list(
+        map(lambda message: {**message, "timestamp": timedelta(microseconds=int(message["timestamp"]))}, messages)
+    )
 
     # Messages may not be in the chronological order
-    messages = [json.loads(message) for message in raw_messages]
     messages.sort(key=lambda m: m["timestamp"])
 
     return messages
