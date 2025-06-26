@@ -1,14 +1,11 @@
 import re
-from datetime import datetime
 from typing import Dict
 
 
 class ResultEntry:
     def __init__(self, json_message: Dict):
         for key in json_message:
-            if key == "timestamp":
-                self._add_attribute(key, datetime.fromisoformat(json_message[key]))
-            elif key == "fields":
+            if key == "fields":
                 for inner_key in json_message[key]:
                     self._add_attribute(inner_key, json_message[key][inner_key])
             else:
