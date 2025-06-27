@@ -61,14 +61,13 @@ class LogContainer:
         """
         return any(log.id == entry_id for log in self.logs)
 
-    def get_logs_by_field(self, field: str, pattern: str) -> Generator[ResultEntry, None, None]:
+    def get_logs_by_field(self, field: str, pattern: str) -> "LogContainer":
         """
         Get all ResultEntry messages that match the given field and pattern.
         """
         regex = re.compile(pattern)
-        for log in self.logs:
-            if regex.search(getattr(log, field, "")):
-                yield log
+        entries = [log for log in self.logs if regex.search(getattr(log, field, ""))]
+        return LogContainer.from_entries(entries)
 
     def find_log(self, field: str, pattern: str) -> ResultEntry | None:
         """
@@ -76,7 +75,7 @@ class LogContainer:
         Returns the first match or None if no match is found.
         Raises ValueError if multiple matches are found.
         """
-        [*findings] = self.get_logs_by_field(field, pattern)
+        findings = self.get_logs_by_field(field, pattern)
         if len(findings) == 0:
             return None
         elif len(findings) == 1:
