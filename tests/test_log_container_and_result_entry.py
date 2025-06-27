@@ -96,7 +96,7 @@ def test_log_container_get_logs_by_field():
             }
         )
     )
-    [*logs] = lc.get_logs_by_field("level", "DEBUG")
+    logs = lc.get_logs_by_field("level", "DEBUG")
     assert len(list(logs)) == 2
     assert logs[0].message == "Debug message 1"
     assert logs[1].message == "Debug message 2"
