@@ -76,4 +76,4 @@ def build_rust_scenarios(path_to_scenarios: Path | str) -> Path:
     if p.returncode != 0:
         raise RuntimeError(f"Building rust test scenarios failed with {p.returncode}! stdout: {outs}; stderr: {errs}")
 
-    return path_to_scenarios / "target" / "debug" / "rust_test_scenarios"
+    return path_to_scenarios.parents[1] / "target" / "debug" / "rust_test_scenarios"
