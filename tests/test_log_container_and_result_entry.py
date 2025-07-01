@@ -117,3 +117,47 @@ def test_log_container_clear_logs():
     )
     lc.clear_logs()
     assert lc.get_logs() == []
+
+
+def test_log_container_groups():
+    lc = LogContainer()
+    lc.add_log(
+        ResultEntry(
+            {
+                "timestamp": "0:00:00.000001",
+                "level": "INFO",
+                "fields": {"message": "Info message 1"},
+                "target": "target::INFO_message",
+                "threadId": "ThreadId(2)",
+            }
+        )
+    )
+    lc.add_log(
+        ResultEntry(
+            {
+                "timestamp": "0:00:00.000002",
+                "level": "INFO",
+                "fields": {"message": "Info message 2"},
+                "target": "target::INFO_message",
+                "threadId": "ThreadId(1)",
+            }
+        )
+    )
+    lc.add_log(
+        ResultEntry(
+            {
+                "timestamp": "0:00:00.000003",
+                "level": "INFO",
+                "fields": {"message": "Info message 3"},
+                "target": "target::INFO_message",
+                "threadId": "ThreadId(2)",
+            }
+        )
+    )
+    groups = lc.group_by("thread_id")
+    assert len(groups) == 2
+    assert len(groups["ThreadId(1)"]) == 1
+    assert len(groups["ThreadId(2)"]) == 2
+    assert groups["ThreadId(1)"][0].message == "Info message 2"
+    assert groups["ThreadId(2)"][0].message == "Info message 1"
+    assert groups["ThreadId(2)"][1].message == "Info message 3"
