@@ -1,79 +1,188 @@
 import json
-import os
 from datetime import timedelta
 from pathlib import Path
+from functools import cache
 from subprocess import PIPE, Popen, TimeoutExpired
+from typing import Any
+from .log_container import LogContainer
+from .result_entry import ResultEntry
 
-TEST_BIN_ENV_VAR = "TEST_BINARY_PATH"
-EXECUTE_TIMEOUT_S = 5
-BUILD_TIMEOUT_S = 180
 
+def execute(
+    rust_scenario_bin_path: Path | str,
+    scenario_name: str,
+    test_config: dict[str, Any],
+    execution_timeout_s: float | None = None,
+) -> LogContainer:
+    """
+    Execute test scenario and return results.
 
-def execute(test_config, test_case_name):
+    Parameters
+    ----------
+    rust_scenario_bin_path : Path | str
+        Path to test scenarios executable.
+    scenario_name : str
+        Scenario name.
+    test_config : dict[str, Any]
+        Test configuration.
+    execution_timeout_s : float | None
+        Execution timeout in seconds.
+        Default: 5.0
+    """
+    # Set timeout.
+    execution_timeout = execution_timeout_s or 5.0
+
+    # Dump test configuration to string.
+    test_config_str = json.dumps(test_config)
+
+    # Run scenario.
     hang = False
-    test_binary_path = os.environ[TEST_BIN_ENV_VAR]
-    test_config_json = json.dumps(test_config)
-
-    command = [test_binary_path, "--name", test_case_name]
+    command = [rust_scenario_bin_path, "--name", scenario_name]
     p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
     try:
-        outs, errs = p.communicate(test_config_json, EXECUTE_TIMEOUT_S)
+        stdout, _ = p.communicate(test_config_str, execution_timeout)
     except TimeoutExpired:
         hang = True
         p.kill()
-        outs, errs = p.communicate()
+        stdout, _ = p.communicate()
 
-    return outs, errs, hang, p.returncode
-
-
-def execute_and_parse(test_config, test_case_name, expect_hang):
-    outs, errs, hang, return_code = execute(test_config, test_case_name)
-
-    if expect_hang and not hang:
-        raise RuntimeError(f"Expecting hang, but test finished! stdout: {outs}; stderr: {errs}")
-    elif not expect_hang and hang:
-        raise RuntimeError(f"Execution hanged! stdout: {outs}; stderr: {errs}")
-
-    # TODO: Check return code for hang and accept non-zero return code for this case
-    if return_code != 0:
-        raise RuntimeError(f"Execution failed with return code {return_code}. stdout: {outs}; stderr: {errs}")
-
-    raw_messages = outs.strip().split("\n")
-    # Filter non-json messages
+    # Read messages from stdout.
+    raw_messages = stdout.strip().split("\n")
+    # Filter non-JSON messages.
     raw_messages = [message for message in raw_messages if message.startswith("{") and message.endswith("}")]
     messages = [json.loads(message) for message in raw_messages]
 
-    # Convert timestamp from microseconds to timedelta
+    # Convert timestamp from microseconds to timedelta.
     messages = list(
         map(lambda message: {**message, "timestamp": timedelta(microseconds=int(message["timestamp"]))}, messages)
     )
 
-    # Messages may not be in the chronological order
+    # Sort messages into chronological order.
     messages.sort(key=lambda m: m["timestamp"])
 
-    return messages
+    # Convert to list of ResultEntry.
+    result_entries = [ResultEntry(msg) for msg in messages]
+
+    # Return results as LogContainer.
+    return LogContainer(result_entries, p.returncode, hang)
 
 
-def build_rust_scenarios(path_to_scenarios: Path | str) -> Path:
+@cache
+def _read_cargo_metadata(cargo_metadata_timeout_s: float | None = None) -> dict[str, Any]:
     """
-    Build the rust test scenarios from the given path.
-    """
-    if not isinstance(path_to_scenarios, Path):
-        path_to_scenarios = Path(path_to_scenarios)
-    path_to_scenarios.resolve()
+    Read Cargo metadata and return as dict.
+    CWD must be inside Cargo project.
+    Result is cached and assumed to remain persistent during execution.
 
-    path_to_manifest = path_to_scenarios / "Cargo.toml"
-    if not path_to_manifest.exists():
-        raise FileNotFoundError(
-            f"Cargo.toml not found at {path_to_manifest}. Please provide a valid path to the rust test scenarios."
+    Parameters
+    ----------
+    cargo_metadata_timeout_s : float | None
+        "cargo metadata" timeout in seconds.
+        Default: 10.0
+    """
+    # Set default timeout.
+    metadata_timeout = cargo_metadata_timeout_s or 10.0
+
+    # Run command.
+    cmd = "cargo metadata --format-version 1"
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, shell=True)
+    stdout, stderr = p.communicate(timeout=metadata_timeout)
+    if p.returncode != 0:
+        raise RuntimeError(
+            f"Failed to read Cargo metadata, returncode: {p.returncode}, stdout: {stdout}, stderr: {stderr}"
         )
 
-    command = ["cargo", "build", "--manifest-path", path_to_manifest]
-    p = Popen(command, stdout=PIPE, stderr=PIPE, text=True)
+    # Load stdout as JSON data.
+    return json.loads(stdout)
 
-    outs, errs = p.communicate(timeout=BUILD_TIMEOUT_S)
+
+def find_test_scenarios_bin(
+    rust_scenarios_bin_name: str | None = None, cargo_metadata_timeout_s: float | None = None
+) -> Path:
+    """
+    Find path to test scenarios executable.
+    Target directory is taken from Cargo metadata.
+    "debug" configuration is used.
+
+    Returns path to executable.
+
+    Parameters
+    ----------
+    rust_scenarios_bin_name : str | None
+        Scenarios executable name.
+        Default: "rust_test_scenarios"
+    cargo_metadata_timeout_s : float | None
+        "cargo metadata" timeout in seconds.
+        Default: 10.0
+    """
+    # Set default name.
+    bin_name = rust_scenarios_bin_name or "rust_test_scenarios"
+
+    # Read metadata.
+    metadata = _read_cargo_metadata(cargo_metadata_timeout_s)
+
+    # Read target directory.
+    target_directory = Path(metadata["target_directory"]).resolve()
+
+    # Check expected file exists.
+    bin_path = target_directory / "debug" / bin_name
+    if not bin_path.exists():
+        raise RuntimeError("Rust scenarios executable not found")
+
+    return bin_path
+
+
+def build_test_scenarios(
+    rust_scenarios_bin_name: str | None = None,
+    cargo_metadata_timeout_s: float | None = None,
+    cargo_build_timeout_s: float | None = None,
+) -> Path:
+    """
+    Build Rust test scenarios.
+    Manifest path is taken from Cargo metadata.
+    "debug" configuration is built.
+
+    Returns path to executable.
+
+    Parameters
+    ----------
+    rust_scenarios_bin_name : str | None
+        Scenarios executable name.
+        Default: "rust_test_scenarios"
+    cargo_metadata_timeout_s : float | None
+        "cargo metadata" timeout in seconds.
+        Default: 10.0
+    cargo_build_timeout_s : float | None
+        "cargo build" timeout in seconds.
+        Default: 180.0
+    """
+    # Set default name.
+    bin_name = rust_scenarios_bin_name or "rust_test_scenarios"
+
+    # Set default build timeout.
+    build_timeout = cargo_build_timeout_s or 180.0
+
+    # Read metadata.
+    metadata = _read_cargo_metadata(cargo_metadata_timeout_s)
+
+    # Read manifest path from metadata.
+    pkg_entries = list(filter(lambda x: x["name"] == bin_name, metadata["packages"]))
+    if len(pkg_entries) < 1:
+        raise RuntimeError(f"No data found for {bin_name}")
+    elif len(pkg_entries) > 1:
+        raise RuntimeError(f"Multiple data found for {bin_name}")
+    pkg_entry = pkg_entries[0]
+
+    manifest_path = Path(pkg_entry["manifest_path"]).resolve()
+
+    # Run build.
+    build_cmd = f"cargo build --manifest-path {manifest_path}"
+    p = Popen(build_cmd, stdout=PIPE, stderr=PIPE, text=True, shell=True)
+    stdout, stderr = p.communicate(timeout=build_timeout)
 
     if p.returncode != 0:
-        raise RuntimeError(f"Building rust test scenarios failed with {p.returncode}! stdout: {outs}; stderr: {errs}")
+        raise RuntimeError(
+            f"Failed to build test scenarios, returncode: {p.returncode}, stdout: {stdout}, stderr: {stderr}"
+        )
 
-    return path_to_scenarios.parents[1] / "target" / "debug" / "rust_test_scenarios"
+    return find_test_scenarios_bin()

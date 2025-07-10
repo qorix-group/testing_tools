@@ -1,4 +1,5 @@
 from datetime import timedelta
+import pytest
 
 from testing_tools.log_container import LogContainer
 from testing_tools.result_entry import ResultEntry
@@ -40,6 +41,50 @@ def test_log_container_add_and_get_logs():
     assert logs[1].level == "INFO"
     assert logs[1].target == "target::INFO_message"
     assert logs[1].thread_id == "ThreadId(2)"
+
+
+def test_log_container_add_multiple_logs():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry(
+                {
+                    "timestamp": "0:00:01.000100",
+                    "level": "DEBUG",
+                    "fields": {"message": "Debug message"},
+                    "target": "target::DEBUG_message",
+                    "threadId": "ThreadId(1)",
+                }
+            ),
+            ResultEntry(
+                {
+                    "timestamp": "0:00:01.000101",
+                    "level": "INFO",
+                    "target": "target::INFO_message",
+                    "threadId": "ThreadId(2)",
+                }
+            ),
+        ]
+    )
+    logs = lc.get_logs()
+    assert len(logs) == 2
+
+    assert logs[0].timestamp == str(timedelta(microseconds=1000100))
+    assert logs[0].level == "DEBUG"
+    assert logs[0].message == "Debug message"
+    assert logs[0].target == "target::DEBUG_message"
+    assert logs[0].thread_id == "ThreadId(1)"
+
+    assert logs[1].timestamp == str(timedelta(microseconds=1000101))
+    assert logs[1].level == "INFO"
+    assert logs[1].target == "target::INFO_message"
+    assert logs[1].thread_id == "ThreadId(2)"
+
+
+def test_log_container_add_raw_string():
+    lc = LogContainer()
+    with pytest.raises(TypeError):
+        lc.add_log("raw_string_example")  # type: ignore
 
 
 def test_log_container_find_log():
