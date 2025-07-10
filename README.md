@@ -1,10 +1,11 @@
-# testing-tools
+# `testing-tools`
 
-Test framework tools and helpers for performance stack project. 
+Test framework tools and helpers for performance stack project.
 
 ## Overview
 
-This package provides utility classes and functions to assist with test automation, log handling, and result parsing. It is designed to be used as a helper library for test frameworks or custom test runners.
+This package provides utility classes and functions to assist with test automation, log handling, and result parsing.
+It is designed to be used as a helper library for test frameworks or custom test runners.
 
 ## Features
 
@@ -13,7 +14,9 @@ This package provides utility classes and functions to assist with test automati
 - **Runtime utilities**: Functions to execute test binaries and parse their output.
 
 ## Installation
+
 You can create and activate a virtual environment for the development purposes:
+
 ```sh
 python -m venv .venv
 source .venv/bin/activate
@@ -46,6 +49,7 @@ lc.add_log(
 logs = lc.get_logs()
 print(logs[0].message)  # Output: Debug message
 ```
+
 LogContainer is used to parse JSON log traces and offers methods to search them.
 
 ```python
@@ -69,4 +73,3 @@ python -m pytest
 
 - Python 3.12+ required.
 - Code style is enforced with [ruff](https://github.com/astral-sh/ruff).
-
