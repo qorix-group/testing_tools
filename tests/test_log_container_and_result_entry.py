@@ -206,3 +206,45 @@ def test_log_container_groups():
     assert groups["ThreadId(1)"][0].message == "Info message 2"
     assert groups["ThreadId(2)"][0].message == "Info message 1"
     assert groups["ThreadId(2)"][1].message == "Info message 3"
+
+
+def test_log_container_init_entries_default_not_referenced() -> None:
+    lc1 = LogContainer()
+    lc1.add_log(ResultEntry({}))
+    lc2 = LogContainer()
+    lc2.add_log(ResultEntry({}))
+
+    assert len(lc1.get_logs()) == 1
+    assert len(lc2.get_logs()) == 1
+
+
+def test_log_container_init_entries_copied_not_referenced() -> None:
+    logs1 = [ResultEntry({})]
+    lc1 = LogContainer(logs1)
+    lc1.add_log(ResultEntry({}))
+    lc2 = LogContainer()
+    lc2.add_log(ResultEntry({}))
+
+    assert len(logs1) == 1
+    assert len(lc1.get_logs()) == 2
+    assert len(lc2.get_logs()) == 1
+
+
+def test_log_container_single_add_log_copied_not_referenced() -> None:
+    logs = [ResultEntry({})]
+    lc = LogContainer(logs)
+    lc.add_log(ResultEntry({}))
+
+    assert len(logs) == 1
+    assert len(lc.get_logs()) == 2
+
+
+def test_log_container_many_add_log_copied_not_referenced() -> None:
+    logs1 = [ResultEntry({}), ResultEntry({})]
+    lc = LogContainer(logs1)
+    logs2 = [ResultEntry({}), ResultEntry({}), ResultEntry({})]
+    lc.add_log(logs2)
+
+    assert len(logs1) == 2
+    assert len(logs2) == 3
+    assert len(lc.get_logs()) == 5

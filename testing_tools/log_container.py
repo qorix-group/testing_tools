@@ -16,16 +16,17 @@ class LogContainer:
     A container for storing and querying logs.
     """
 
-    def __init__(self, entries: list[ResultEntry] | None = None) -> None:
+    def __init__(self, entries: list[ResultEntry] = []) -> None:
         """
         Create log container.
+        Entries are copied on construction.
 
         Parameters
         ----------
-        entries : list[ResultEntry] | None
+        entries : list[ResultEntry]
             List of ResultEntry objects.
         """
-        self._logs = entries or []
+        self._logs = list(entries)
 
     def __iter__(self):
         self._index = 0
