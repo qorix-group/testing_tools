@@ -1,3 +1,7 @@
+"""
+Test framework tools and helpers for performance stack project.
+"""
+
 __all__ = [
     "cargo_tools",
     "log_container",

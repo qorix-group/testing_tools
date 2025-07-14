@@ -26,8 +26,7 @@ class ResultEntry:
         name = self._camel_case_to_snake_case(name)
         if hasattr(self, name):
             raise RuntimeError(f"Tries to add duplicated field {name} to the ResultEntry, test issue!")
-        else:
-            setattr(self, name, value)
+        setattr(self, name, value)
 
     def __str__(self) -> str:
         members = [f"{attr}={getattr(self, attr)}" for attr in vars(self)]

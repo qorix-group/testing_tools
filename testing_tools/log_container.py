@@ -16,17 +16,18 @@ class LogContainer:
     A container for storing and querying logs.
     """
 
-    def __init__(self, entries: list[ResultEntry] = []) -> None:
+    def __init__(self, entries: list[ResultEntry] | None = None) -> None:
         """
         Create log container.
         Entries are copied on construction.
 
         Parameters
         ----------
-        entries : list[ResultEntry]
+        entries : list[ResultEntry] | None
             List of ResultEntry objects.
         """
-        self._logs = list(entries)
+        self._logs = list(entries or [])
+        self._index = 0
 
     def __iter__(self):
         self._index = 0
@@ -37,8 +38,7 @@ class LogContainer:
             result = self._logs[self._index]
             self._index += 1
             return result
-        else:
-            raise StopIteration()
+        raise StopIteration()
 
     def __len__(self):
         """
@@ -79,12 +79,12 @@ class LogContainer:
         Raises ValueError if multiple matches are found.
         """
         findings = self.get_logs_by_field(field, pattern)
-        if len(findings) == 0:
-            return None
-        elif len(findings) == 1:
+        if len(findings) == 1:
             return findings[0]
-        elif len(findings) > 1:
+        if len(findings) > 1:
             raise ValueError(f"Multiple logs found for {field=} and {pattern=}")
+
+        return None
 
     def add_log(self, log: ResultEntry | list[ResultEntry]) -> None:
         """
@@ -97,7 +97,7 @@ class LogContainer:
         """
         if isinstance(log, ResultEntry):
             self._logs.append(log)
-        elif isinstance(log, list) and all([isinstance(x, ResultEntry) for x in log]):
+        elif isinstance(log, list) and all(isinstance(x, ResultEntry) for x in log):
             self._logs.extend(log)
         else:
             raise TypeError("log must be a ResultEntry or list[ResultEntry]")

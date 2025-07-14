@@ -1,3 +1,7 @@
+"""
+Tests for "result_entry" module.
+"""
+
 from datetime import timedelta
 
 from testing_tools import ResultEntry

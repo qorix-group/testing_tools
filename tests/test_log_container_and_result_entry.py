@@ -1,3 +1,7 @@
+"""
+Tests for "log_container" and "result_entry" modules.
+"""
+
 from datetime import timedelta
 
 import pytest

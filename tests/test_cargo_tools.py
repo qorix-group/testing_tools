@@ -46,10 +46,10 @@ def tmp_project(tmp_path: Path) -> tuple[str, Path]:
 
     # Create binary project.
     command = ["cargo", "new", "--bin", project_path]
-    p = Popen(command, text=True)
-    _, _ = p.communicate(timeout=30.0)
-    if p.returncode != 0:
-        raise RuntimeError("Failed to create temporary binary project")
+    with Popen(command, text=True) as p:
+        _, _ = p.communicate(timeout=30.0)
+        if p.returncode != 0:
+            raise RuntimeError("Failed to create temporary binary project")
 
     return (bin_name, project_path)
 

@@ -2,6 +2,8 @@
 Utilities for interacting with Cargo.
 """
 
+__all__ = ["cargo_metadata", "find_bin_path", "select_bin_path", "cargo_build"]
+
 import json
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
@@ -25,10 +27,10 @@ def cargo_metadata(metadata_timeout: float | None = None) -> dict[str, Any]:
 
     # Run command.
     command = ["cargo", "metadata", "--format-version", "1"]
-    p = Popen(command, stdout=PIPE, text=True)
-    stdout, _ = p.communicate(timeout=metadata_timeout)
-    if p.returncode != 0:
-        raise RuntimeError(f"Failed to read Cargo metadata, returncode: {p.returncode}")
+    with Popen(command, stdout=PIPE, text=True) as p:
+        stdout, _ = p.communicate(timeout=metadata_timeout)
+        if p.returncode != 0:
+            raise RuntimeError(f"Failed to read Cargo metadata, returncode: {p.returncode}")
 
     # Load stdout as JSON data.
     return json.loads(stdout)
@@ -91,7 +93,7 @@ def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Pa
 
         return option_bin_path
 
-    elif option_bin_name := config.getoption("--bin-name", default=None):  # type: ignore
+    if option_bin_name := config.getoption("--bin-name", default=None):  # type: ignore
         # Check name type is valid.
         if not isinstance(option_bin_name, str):
             raise UsageError(f"Invalid executable name type: {type(option_bin_name)}")
@@ -104,8 +106,7 @@ def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Pa
         except Exception as e:
             raise UsageError from e
 
-    else:
-        raise UsageError('Either "--bin-path" or "--bin-name" must be set')
+    raise UsageError('Either "--bin-path" or "--bin-name" must be set')
 
 
 def cargo_build(bin_name: str, metadata_timeout: float | None = None, build_timeout: float | None = None) -> Path:
@@ -136,7 +137,7 @@ def cargo_build(bin_name: str, metadata_timeout: float | None = None, build_time
     pkg_entries = list(filter(lambda x: x["name"] == bin_name, metadata["packages"]))
     if len(pkg_entries) < 1:
         raise RuntimeError(f"No data found for {bin_name}")
-    elif len(pkg_entries) > 1:
+    if len(pkg_entries) > 1:
         raise RuntimeError(f"Multiple data found for {bin_name}")
     pkg_entry = pkg_entries[0]
 
@@ -144,10 +145,9 @@ def cargo_build(bin_name: str, metadata_timeout: float | None = None, build_time
 
     # Run build.
     command = ["cargo", "build", "--manifest-path", manifest_path]
-    p = Popen(command, text=True)
-    _, _ = p.communicate(timeout=build_timeout)
-
-    if p.returncode != 0:
-        raise RuntimeError(f"Failed to run build, returncode: {p.returncode}")
+    with Popen(command, text=True) as p:
+        _, _ = p.communicate(timeout=build_timeout)
+        if p.returncode != 0:
+            raise RuntimeError(f"Failed to run build, returncode: {p.returncode}")
 
     return find_bin_path(bin_name, metadata_timeout)

@@ -41,7 +41,6 @@ class Scenario(ABC):
         """
         Name of a test scenario to run.
         """
-        pass
 
     @pytest.fixture(scope="class")
     @abstractmethod
@@ -49,7 +48,6 @@ class Scenario(ABC):
         """
         Test configuration.
         """
-        pass
 
     @pytest.fixture(scope="class")
     def execution_timeout(self, request: FixtureRequest) -> float:
@@ -64,8 +62,7 @@ class Scenario(ABC):
         timeout = request.config.getoption("--default-execution-timeout")
         if isinstance(timeout, float):
             return timeout
-        else:
-            return 5.0
+        return 5.0
 
     def capture_stderr(self) -> bool:
         """
@@ -111,13 +108,13 @@ class Scenario(ABC):
 
         command = [bin_path, "--name", scenario_name]
         stderr_param = PIPE if self.capture_stderr() else None
-        p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=stderr_param, text=True)
-        try:
-            stdout, stderr = p.communicate(test_config_str, execution_timeout)
-        except TimeoutExpired:
-            hang = True
-            p.kill()
-            stdout, stderr = p.communicate()
+        with Popen(command, stdout=PIPE, stdin=PIPE, stderr=stderr_param, text=True) as p:
+            try:
+                stdout, stderr = p.communicate(test_config_str, execution_timeout)
+            except TimeoutExpired:
+                hang = True
+                p.kill()
+                stdout, stderr = p.communicate()
 
         return ScenarioResult(stdout, stderr, p.returncode, hang)
 
@@ -136,7 +133,7 @@ class Scenario(ABC):
 
         # Filter out non-JSON messages.
         messages = filter(lambda m: m.startswith("{") and m.endswith("}"), text_lines)
-        messages = list(map(lambda m: json.loads(m), messages))
+        messages = list(map(json.loads, messages))
 
         # Convert timestamp from microseconds to timedelta.
         for msg in messages:
