@@ -188,6 +188,17 @@ class TestExample(Scenario):
 
 Execution timeout uses `"--default-execution-timeout"` set in `conftest.py`, or is set to 5 seconds by default.
 
+`stderr` is shown, but not captured default.
+To capture `stderr` use:
+
+```python
+class TestExample(Scenario):
+    def capture_stderr(self) -> bool:
+        return True
+
+    ...
+```
+
 ## Development
 
 - Python 3.12+ required.

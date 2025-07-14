@@ -25,7 +25,7 @@ class ScenarioResult:
     """
 
     stdout: str
-    stderr: str
+    stderr: str | None
     return_code: int | None
     hang: bool
 
@@ -67,6 +67,12 @@ class Scenario(ABC):
         else:
             return 5.0
 
+    def capture_stderr(self) -> bool:
+        """
+        Capture or display stderr during execution.
+        """
+        return False
+
     @pytest.fixture(scope="class")
     def bin_path(self, request: FixtureRequest) -> Path:
         """
@@ -104,9 +110,8 @@ class Scenario(ABC):
         hang = False
 
         command = [bin_path, "--name", scenario_name]
-        # TODO: check if stderr must be passed to PIPE.
-        # Maybe it can be shown during execution.
-        p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+        stderr_param = PIPE if self.capture_stderr() else None
+        p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=stderr_param, text=True)
         try:
             stdout, stderr = p.communicate(test_config_str, execution_timeout)
         except TimeoutExpired:
