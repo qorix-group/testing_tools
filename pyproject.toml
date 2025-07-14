@@ -1,7 +1,7 @@
 [project]
 name = "testing-tools"
 version = "0.0.5"
-dependencies = []
+dependencies = ["pytest"]
 requires-python = ">=3.12"
 authors = [
   { name = "Igor Ostrowski", email = "igor.ostrowski.ext@qorix.ai" },
@@ -16,4 +16,4 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["ruff"]

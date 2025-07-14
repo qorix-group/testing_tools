@@ -1,7 +1,6 @@
-import json
 from datetime import timedelta
 
-from testing_tools.result_entry import ResultEntry
+from testing_tools import ResultEntry
 
 
 def test_result_entry_creation_and_properties():

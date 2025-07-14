@@ -1,3 +1,7 @@
+"""
+A container for storing and querying logs.
+"""
+
 import re
 from itertools import groupby
 from operator import attrgetter
@@ -9,27 +13,19 @@ __all__ = ["LogContainer"]
 
 class LogContainer:
     """
-    Container for execution results and messages.
+    A container for storing and querying logs.
     """
 
-    def __init__(
-        self, entries: list[ResultEntry] | None = None, return_code: int | None = None, hang: bool | None = None
-    ) -> None:
+    def __init__(self, entries: list[ResultEntry] | None = None) -> None:
         """
         Create log container.
 
         Parameters
         ----------
-        entries : list[ResultEntry]
+        entries : list[ResultEntry] | None
             List of ResultEntry objects.
-        return_code : int | None
-            Execution return code.
-        hang : bool | None
-            True if execution hanged.
         """
         self._logs = entries or []
-        self._return_code = return_code
-        self._hang = hang
 
     def __iter__(self):
         self._index = 0
@@ -55,21 +51,6 @@ class LogContainer:
         """
         return self._logs[subscript]
 
-    @property
-    def return_code(self) -> int | None:
-        """
-        Execution return code.
-        """
-        return self._return_code
-
-    @property
-    def hang(self) -> bool | None:
-        """
-        True if execution hanged.
-        None if not specified.
-        """
-        return self._hang
-
     def contains_log(self, field: str, pattern: str) -> bool:
         """
         Check if a LogContainer contains a ResultEntry with the given field and pattern.
@@ -88,7 +69,7 @@ class LogContainer:
         """
         regex = re.compile(pattern)
         entries = [log for log in self._logs if regex.search(getattr(log, field, ""))]
-        return LogContainer(entries, self._return_code, self._hang)
+        return LogContainer(entries)
 
     def find_log(self, field: str, pattern: str) -> ResultEntry | None:
         """
@@ -147,4 +128,4 @@ class LogContainer:
         """
         sorted_logs_by_attr = sorted(self._logs, key=attrgetter(attribute))
         grouped = groupby(sorted_logs_by_attr, key=attrgetter(attribute))
-        return {key: LogContainer(list(group), self._return_code, self._hang) for key, group in grouped}
+        return {key: LogContainer(list(group)) for key, group in grouped}

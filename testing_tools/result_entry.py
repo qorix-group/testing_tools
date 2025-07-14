@@ -1,3 +1,7 @@
+"""
+Structured representation of test log entries.
+"""
+
 import re
 from typing import Any
 

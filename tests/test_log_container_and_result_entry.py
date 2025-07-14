@@ -1,8 +1,8 @@
 from datetime import timedelta
+
 import pytest
 
-from testing_tools.log_container import LogContainer
-from testing_tools.result_entry import ResultEntry
+from testing_tools import LogContainer, ResultEntry
 
 
 def test_log_container_add_and_get_logs():
