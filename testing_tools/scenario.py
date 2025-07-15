@@ -29,6 +29,15 @@ class ScenarioResult:
     return_code: int | None
     hang: bool
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        field_reprs: list[str] = []
+        for name, value in self.__dict__.items():
+            if isinstance(value, str):
+                value = f"{value[:47]}..."
+            field_reprs.append(f"{name}={repr(value)}")
+        return f"{class_name}({', '.join(field_reprs)})"
+
 
 class Scenario(ABC):
     """
