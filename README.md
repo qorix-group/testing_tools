@@ -26,14 +26,17 @@ source .venv/bin/activate
 Install `testing_tools`:
 
 ```bash
-pip install .
+pip install . --config-settings editable_mode=strict
 ```
 
 Install `testing_tools` in editable mode with additional dev dependencies:
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev] --config-settings editable_mode=strict
 ```
+
+> `--config-settings editable_mode=strict` is required by Pylance plugin in VS Code.
+> Package will work without it, but autocompletion won't work properly.
 
 ## Usage
 
