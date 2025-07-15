@@ -37,20 +37,20 @@ class Scenario(ABC):
 
     @pytest.fixture(scope="class")
     @abstractmethod
-    def scenario_name(self) -> str:
+    def scenario_name(self, *args, **kwargs) -> str:
         """
         Name of a test scenario to run.
         """
 
     @pytest.fixture(scope="class")
     @abstractmethod
-    def test_config(self) -> dict[str, Any]:
+    def test_config(self, *args, **kwargs) -> dict[str, Any]:
         """
         Test configuration.
         """
 
     @pytest.fixture(scope="class")
-    def execution_timeout(self, request: FixtureRequest) -> float:
+    def execution_timeout(self, request: FixtureRequest, *args, **kwargs) -> float:
         """
         Test execution timeout in seconds.
 
@@ -64,7 +64,7 @@ class Scenario(ABC):
             return timeout
         return 5.0
 
-    def capture_stderr(self) -> bool:
+    def capture_stderr(self, *args, **kwargs) -> bool:
         """
         Capture or display stderr during execution.
         """
@@ -84,7 +84,13 @@ class Scenario(ABC):
 
     @pytest.fixture(scope="class")
     def results(
-        self, bin_path: Path | str, scenario_name: str, test_config: dict[str, Any], execution_timeout: float
+        self,
+        bin_path: Path | str,
+        scenario_name: str,
+        test_config: dict[str, Any],
+        execution_timeout: float,
+        *args,
+        **kwargs,
     ) -> ScenarioResult:
         """
         Execute test scenario executable and return results.
@@ -119,7 +125,7 @@ class Scenario(ABC):
         return ScenarioResult(stdout, stderr, p.returncode, hang)
 
     @pytest.fixture(scope="class")
-    def logs(self, results: ScenarioResult) -> LogContainer:
+    def logs(self, results: ScenarioResult, *args, **kwargs) -> LogContainer:
         """
         Execute test scenario executable and return logs.
 

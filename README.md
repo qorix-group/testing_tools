@@ -174,6 +174,7 @@ Test execution results are provided using two fixtures:
 Example implementation:
 
 ```python
+import pytest
 from testing_tools import Scenario, ScenarioResult, LogContainer
 
 class TestExample(Scenario):
@@ -191,13 +192,31 @@ class TestExample(Scenario):
 
 Execution timeout uses `"--default-execution-timeout"` set in `conftest.py`, or is set to 5 seconds by default.
 
-`stderr` is shown, but not captured default.
+`stderr` is shown, but not captured by default.
 To capture `stderr` use:
 
 ```python
 class TestExample(Scenario):
     def capture_stderr(self) -> bool:
         return True
+
+    ...
+```
+
+Methods can be overrridden to utilize test-specific fixtures:
+
+```python
+import pytest
+from testing_tools import Scenario
+
+class TestExample(Scenario)
+    @pytest.fixture(scope="class", params=[1, 4, 256])
+    def queue_size(self, request: pytest.FixtureRequest) -> int:
+        return request.param
+
+    @pytest.fixture(scope="class")
+    def test_config(self, queue_size: int) -> dict[str, Any]:
+        return {"runtime": {"task_queue_size": queue_size, "workers": 1}}
 
     ...
 ```
