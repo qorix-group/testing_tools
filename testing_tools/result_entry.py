@@ -11,9 +11,20 @@ from typing import Any
 class ResultEntry:
     """
     Structured representation of test log entries.
+
+    Values are set as attributes, with keys changed to snake case.
+    E.g., message `{"threadId": "ThreadID(1)"}` will have `threadId` key available under `entry.thread_id`.
     """
 
     def __init__(self, json_message: dict[str, Any]) -> None:
+        """
+        Create entry.
+
+        Parameters
+        ----------
+        json_message : dict[str, Any]
+            Message content.
+        """
         for key in json_message:
             if key == "fields":
                 for inner_key in json_message[key]:
@@ -29,6 +40,9 @@ class ResultEntry:
         if hasattr(self, name):
             raise RuntimeError(f"Tries to add duplicated field {name} to the ResultEntry, test issue!")
         setattr(self, name, value)
+
+    def __getattribute__(self, name: str) -> Any:
+        return super().__getattribute__(name)
 
     def __str__(self) -> str:
         members = [f"{attr}={getattr(self, attr)}" for attr in vars(self)]
