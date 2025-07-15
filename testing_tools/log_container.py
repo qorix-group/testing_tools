@@ -2,13 +2,13 @@
 A container for storing and querying logs.
 """
 
+__all__ = ["LogContainer"]
+
 import re
 from itertools import groupby
 from operator import attrgetter
 
 from .result_entry import ResultEntry
-
-__all__ = ["LogContainer"]
 
 
 class LogContainer:

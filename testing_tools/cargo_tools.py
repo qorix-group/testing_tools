@@ -12,19 +12,16 @@ from typing import Any
 from pytest import Config, UsageError
 
 
-def cargo_metadata(metadata_timeout: float | None = None) -> dict[str, Any]:
+def cargo_metadata(metadata_timeout: float = 10.0) -> dict[str, Any]:
     """
     Read Cargo metadata and return as dict.
     CWD must be inside Cargo project.
 
     Parameters
     ----------
-    metadata_timeout : float | None
+    metadata_timeout : float
         "cargo metadata" timeout in seconds.
-        Default: 10.0
     """
-    metadata_timeout = metadata_timeout or 10.0
-
     # Run command.
     command = ["cargo", "metadata", "--format-version", "1"]
     with Popen(command, stdout=PIPE, text=True) as p:
@@ -36,7 +33,7 @@ def cargo_metadata(metadata_timeout: float | None = None) -> dict[str, Any]:
     return json.loads(stdout)
 
 
-def find_bin_path(bin_name: str, metadata_timeout: float | None = None) -> Path:
+def find_bin_path(bin_name: str, expect_exists: bool = True, metadata_timeout: float = 10.0) -> Path:
     """
     Find path to executable.
     Target directory is taken from Cargo metadata.
@@ -48,25 +45,26 @@ def find_bin_path(bin_name: str, metadata_timeout: float | None = None) -> Path:
     ----------
     bin_name : str
         Executable name.
-    metadata_timeout : float | None
+    expect_exists : bool
+        Check that executable exists.
+    metadata_timeout : float
         "cargo metadata" timeout in seconds.
-        Default: 10.0
     """
     # Read metadata.
-    metadata = cargo_metadata(metadata_timeout)
+    metadata = cargo_metadata(metadata_timeout=metadata_timeout)
 
     # Read target directory.
     target_directory = Path(metadata["target_directory"]).resolve()
 
     # Check expected file exists.
     bin_path = target_directory / "debug" / bin_name
-    if not bin_path.exists():
+    if expect_exists and not bin_path.exists():
         raise RuntimeError(f"Executable not found: {bin_path}")
 
     return bin_path
 
 
-def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Path:
+def select_bin_path(config: Config, expect_exists: bool = True, metadata_timeout: float = 10.0) -> Path:
     """
     Select executable path based on "--bin-path" and "--bin-name" options.
     Execution order is following:
@@ -78,17 +76,18 @@ def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Pa
     ----------
     config : Config
         Pytest config object.
-    metadata_timeout : float | None
+    expect_exists : bool
+        Check that executable exists.
+    metadata_timeout : float
         "cargo metadata" timeout in seconds.
         Used only when "--bin-name" is set.
-        Default: 10.0
     """
     # Types are ignored due to 'default' being incorrectly set to 'notset' type.
     if option_bin_path := config.getoption("--bin-path", default=None):  # type: ignore
         # Check path is valid.
         if not isinstance(option_bin_path, Path):
             raise UsageError(f"Invalid executable path type: {type(option_bin_path)}")
-        if not option_bin_path.is_file():
+        if expect_exists and not option_bin_path.is_file():
             raise UsageError(f"Invalid executable path: {option_bin_path}")
 
         return option_bin_path
@@ -100,7 +99,7 @@ def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Pa
         # Find path, rethrow as 'UsageError' on errors.
         # Timeouts are rethrowed as 'TimeoutExpired'.
         try:
-            return find_bin_path(option_bin_name, metadata_timeout)
+            return find_bin_path(option_bin_name, expect_exists, metadata_timeout)
         except TimeoutExpired as e:
             raise e
         except Exception as e:
@@ -109,7 +108,7 @@ def select_bin_path(config: Config, metadata_timeout: float | None = None) -> Pa
     raise UsageError('Either "--bin-path" or "--bin-name" must be set')
 
 
-def cargo_build(bin_name: str, metadata_timeout: float | None = None, build_timeout: float | None = None) -> Path:
+def cargo_build(bin_name: str, metadata_timeout: float = 10.0, build_timeout: float = 180.0) -> Path:
     """
     Run build.
     Manifest path is taken from Cargo metadata.
@@ -121,15 +120,11 @@ def cargo_build(bin_name: str, metadata_timeout: float | None = None, build_time
     ----------
     bin_name : str
         Executable name.
-    metadata_timeout : float | None
+    metadata_timeout : float
         "cargo metadata" timeout in seconds.
-        Default: 10.0
-    build_timeout : float | None
+    build_timeout : float
         "cargo build" timeout in seconds.
-        Default: 180.0
     """
-    build_timeout = build_timeout or 180.0
-
     # Read metadata.
     metadata = cargo_metadata(metadata_timeout)
 

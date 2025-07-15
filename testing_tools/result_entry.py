@@ -2,6 +2,8 @@
 Structured representation of test log entries.
 """
 
+__all__ = ["ResultEntry"]
+
 import re
 from typing import Any
 

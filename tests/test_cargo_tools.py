@@ -145,7 +145,7 @@ def test_find_bin_path_ok(built_tmp_project: tuple[str, Path]) -> None:
     with cwd(path):
         act_bin_path = cargo_tools.find_bin_path(bin_name)
 
-        # Check executable exists at expected path.
+        # Check returned path is as expected.
         exp_bin_path = path / "target" / "debug" / bin_name
         assert act_bin_path == exp_bin_path
 
@@ -169,6 +169,16 @@ def test_find_bin_path_invalid_cwd(built_tmp_project: tuple[str, Path]) -> None:
     invalid_project_path = "/tmp"
     with cwd(invalid_project_path), raises(RuntimeError):
         _ = cargo_tools.find_bin_path(bin_name)
+
+
+def test_find_bin_path_not_expect_exists(tmp_project: tuple[str, Path]) -> None:
+    bin_name, path = tmp_project
+    with cwd(path):
+        act_bin_path = cargo_tools.find_bin_path(bin_name, expect_exists=False)
+
+        # Check returned path is as expected.
+        exp_bin_path = path / "target" / "debug" / bin_name
+        assert act_bin_path == exp_bin_path
 
 
 # endregion
@@ -211,7 +221,7 @@ def test_select_bin_path_bin_path_set_ok(built_tmp_project: tuple[str, Path]) ->
         # Run.
         act_bin_path = cargo_tools.select_bin_path(cfg)  # type: ignore
 
-        # Check executable exists at expected path.
+        # Check returned path is as expected.
         assert act_bin_path == exp_bin_path
 
 
@@ -239,6 +249,22 @@ def test_select_bin_path_bin_path_set_invalid_value(built_tmp_project: tuple[str
         _ = cargo_tools.select_bin_path(cfg)  # type: ignore
 
 
+def test_select_bin_path_bin_path_not_expect_exists(tmp_project: tuple[str, Path]) -> None:
+    bin_name, path = tmp_project
+    with cwd(path):
+        # Find executable path.
+        exp_bin_path = cargo_tools.find_bin_path(bin_name, expect_exists=False)
+
+        # Create mock.
+        cfg = MockConfig({"--bin-path": exp_bin_path})
+
+        # Run.
+        act_bin_path = cargo_tools.select_bin_path(cfg, expect_exists=False)  # type: ignore
+
+        # Check returned path is as expected.
+        assert act_bin_path == exp_bin_path
+
+
 def test_select_bin_path_bin_name_set_ok(built_tmp_project: tuple[str, Path]) -> None:
     bin_name, path = built_tmp_project
     with cwd(path):
@@ -251,7 +277,7 @@ def test_select_bin_path_bin_name_set_ok(built_tmp_project: tuple[str, Path]) ->
         # Run.
         act_bin_path = cargo_tools.select_bin_path(cfg)  # type: ignore
 
-        # Check executable exists at expected path.
+        # Check returned path is as expected.
         assert act_bin_path == exp_bin_path
 
 
@@ -274,6 +300,22 @@ def test_select_bin_path_bin_name_set_invalid_value(built_tmp_project: tuple[str
 
         # Run.
         _ = cargo_tools.select_bin_path(cfg)  # type: ignore
+
+
+def test_select_bin_path_bin_name_not_expect_exists(tmp_project: tuple[str, Path]) -> None:
+    bin_name, path = tmp_project
+    with cwd(path):
+        # Find executable path.
+        exp_bin_path = cargo_tools.find_bin_path(bin_name, expect_exists=False)
+
+        # Create mock.
+        cfg = MockConfig({"--bin-name": bin_name})
+
+        # Run.
+        act_bin_path = cargo_tools.select_bin_path(cfg, expect_exists=False)  # type: ignore
+
+        # Check returned path is as expected.
+        assert act_bin_path == exp_bin_path
 
 
 def test_select_bin_path_bin_name_timeout(built_tmp_project: tuple[str, Path]) -> None:

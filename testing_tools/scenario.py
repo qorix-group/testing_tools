@@ -2,6 +2,8 @@
 Utilities for defining and running test scenarios.
 """
 
+__all__ = ["ScenarioResult", "Scenario"]
+
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
