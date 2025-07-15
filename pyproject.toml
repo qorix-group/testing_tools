@@ -1,6 +1,6 @@
 [project]
-name = "testing-tools"
-version = "0.0.5"
+name = "testing-utils"
+version = "0.1.0"
 dependencies = ["pytest"]
 requires-python = ">=3.12"
 authors = [
@@ -8,7 +8,7 @@ authors = [
   { name = "Piotr Korkus", email = "piotr.korkus.ext@qorix.ai" },
   { name = "Arkadiusz Jędrzejewski", email = "arkadiusz.jedrzejewski.ext@qorix.ai" },
 ]
-description = "Test framework tools and helpers"
+description = "Test framework tools and helpers for performance stack project."
 readme = "README.md"
 
 [build-system]

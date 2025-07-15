@@ -6,7 +6,7 @@ from datetime import timedelta
 
 import pytest
 
-from testing_tools import LogContainer, ResultEntry
+from testing_utils import LogContainer, ResultEntry
 
 
 def test_log_container_add_and_get_logs():

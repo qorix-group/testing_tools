@@ -4,7 +4,7 @@ Tests for "result_entry" module.
 
 from datetime import timedelta
 
-from testing_tools import ResultEntry
+from testing_utils import ResultEntry
 
 
 def test_result_entry_creation_and_properties():

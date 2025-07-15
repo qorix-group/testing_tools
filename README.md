@@ -1,4 +1,4 @@
-# `testing-tools`
+# `testing-utils`
 
 Test framework tools and helpers for performance stack project.
 
@@ -23,13 +23,13 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Install `testing_tools`:
+Install `testing-utils`:
 
 ```bash
 pip install . --config-settings editable_mode=strict
 ```
 
-Install `testing_tools` in editable mode with additional dev dependencies:
+Install `testing-utils` in editable mode with additional dev dependencies:
 
 ```bash
 pip install -e .[dev] --config-settings editable_mode=strict
@@ -49,7 +49,7 @@ CWD must be set to Cargo project.
 
 ```python
 from typing import Any
-from testing_tools import cargo_metadata
+from testing_utils import cargo_metadata
 
 metadata: dict[str, Any] = cargo_metadata()
 ```
@@ -61,7 +61,7 @@ CWD must be set to Cargo project.
 
 ```python
 from pathlib import Path
-from testing_tools import find_bin_path
+from testing_utils import find_bin_path
 
 bin_name = "executable_name"
 bin_path: Path = find_bin_path(bin_name)
@@ -97,7 +97,7 @@ Usage:
 ```python
 from pathlib import Path
 from pytest import FeatureRequest
-from testing_tools import select_bin_path
+from testing_utils import select_bin_path
 
 def test_example(request: FeatureRequest) -> None:
     bin_path: Path = select_bin_path(request.config)
@@ -110,7 +110,7 @@ Run build based on manifest located in CWD.
 CWD must be set to Cargo project.
 
 ```python
-from testing_tools import cargo_build
+from testing_utils import cargo_build
 
 bin_name = "rust_executable"
 bin_path: Path = cargo_build(bin_name)
@@ -122,7 +122,7 @@ bin_path: Path = cargo_build(bin_name)
 Usage as container:
 
 ```python
-from testing_tools import LogContainer, ResultEntry
+from testing_utils import LogContainer, ResultEntry
 
 lc = LogContainer()
 lc.add_log(
@@ -142,7 +142,7 @@ print(logs[0].message)
 Usage as JSON log trace parser:
 
 ```python
-from testing_tools import LogContainer, ResultEntry
+from testing_utils import LogContainer, ResultEntry
 
 # "messages" is a list of JSON logs.
 logs = [ResultEntry(msg) for msg in messages]
@@ -153,7 +153,7 @@ lc.contains_log(field="message", pattern="SomeExampleAction")  # True
 Usage as log filter:
 
 ```python
-from testing_tools import LogContainer, ResultEntry
+from testing_utils import LogContainer, ResultEntry
 
 # "messages" is a list of JSON logs.
 logs = [ResultEntry(msg) for msg in messages]
@@ -175,7 +175,7 @@ Example implementation:
 
 ```python
 import pytest
-from testing_tools import Scenario, ScenarioResult, LogContainer
+from testing_utils import Scenario, ScenarioResult, LogContainer
 
 class TestExample(Scenario):
     @pytest.fixture(scope="class")
@@ -207,7 +207,7 @@ Methods can be overrridden to utilize test-specific fixtures:
 
 ```python
 import pytest
-from testing_tools import Scenario
+from testing_utils import Scenario
 
 class TestExample(Scenario)
     @pytest.fixture(scope="class", params=[1, 4, 256])
