@@ -60,7 +60,7 @@ class LogContainer:
 
     _not_found = _NotFound()
 
-    def _logs_by_field_str(self, field: str, pattern: str, excluded: bool) -> list[ResultEntry]:
+    def _logs_by_field_str(self, field: str, pattern: str, reverse: bool) -> list[ResultEntry]:
         """
         Filter entries using regex matching.
 
@@ -70,7 +70,7 @@ class LogContainer:
             Name of the field to match.
         pattern : str
             Regex pattern to match.
-        excluded : bool
+        reverse : bool
             Return entries not matched.
         """
         entries = []
@@ -80,15 +80,13 @@ class LogContainer:
             if found_value == self._not_found:
                 continue
             if not isinstance(found_value, type(pattern)):
-                raise TypeError(
-                    f"Type mismatch, provided value type: {type(pattern)}, found value type: {type(found_value)}"
-                )
+                continue
             found = regex.search(found_value) is not None
-            if found ^ excluded:
+            if found ^ reverse:
                 entries.append(log)
         return entries
 
-    def _logs_by_field_any(self, field: str, pattern: Any, excluded: bool) -> list[ResultEntry]:
+    def _logs_by_field_any(self, field: str, pattern: Any, reverse: bool) -> list[ResultEntry]:
         """
         Filter entries by value.
 
@@ -98,7 +96,7 @@ class LogContainer:
             Name of the field to match.
         pattern : Any
             Pattern to match.
-        excluded : bool
+        reverse : bool
             Return entries not matched.
         """
         entries = []
@@ -107,15 +105,13 @@ class LogContainer:
             if found_value == self._not_found:
                 continue
             if not isinstance(found_value, type(pattern)):
-                raise TypeError(
-                    f"Type mismatch, provided value type: {type(pattern)}, found value type: {type(found_value)}"
-                )
+                continue
             found = found_value == pattern
-            if found ^ excluded:
+            if found ^ reverse:
                 entries.append(log)
         return entries
 
-    def _logs_by_field(self, field: str, pattern: Any, excluded: bool) -> list[ResultEntry]:
+    def _logs_by_field(self, field: str, pattern: Any, reverse: bool) -> list[ResultEntry]:
         """
         Filter entries by type specific filtering method.
 
@@ -126,14 +122,13 @@ class LogContainer:
         pattern : Any
             Pattern to match.
             Regex match is used for 'str' values.
-        excluded : bool
+        reverse : bool
             Return entries not matched.
         """
-
         if isinstance(pattern, str):
-            return self._logs_by_field_str(field, pattern, excluded)
+            return self._logs_by_field_str(field, pattern, reverse)
         else:
-            return self._logs_by_field_any(field, pattern, excluded)
+            return self._logs_by_field_any(field, pattern, reverse)
 
     def contains_log(self, field: str, pattern: Any) -> bool:
         """
@@ -147,7 +142,7 @@ class LogContainer:
             Pattern to match.
             Regex match is used for 'str' values.
         """
-        return len(self._logs_by_field(field, pattern, False)) > 0
+        return len(self._logs_by_field(field, pattern, reverse=False)) > 0
 
     def contains_id(self, entry_id: str) -> bool:
         """
@@ -167,7 +162,7 @@ class LogContainer:
             Pattern to match.
             Regex match is used for 'str' values.
         """
-        return LogContainer(self._logs_by_field(field, pattern, False))
+        return LogContainer(self._logs_by_field(field, pattern, reverse=False))
 
     def find_log(self, field: str, pattern: Any) -> ResultEntry | None:
         """
@@ -183,7 +178,7 @@ class LogContainer:
             Pattern to match.
             Regex match is used for 'str' values.
         """
-        findings = self._logs_by_field(field, pattern, False)
+        findings = self._logs_by_field(field, pattern, reverse=False)
         if len(findings) == 1:
             return findings[0]
         if len(findings) > 1:
@@ -231,7 +226,7 @@ class LogContainer:
             Pattern to match.
             Regex match is used for 'str' values.
         """
-        self._logs = self._logs_by_field(field, pattern, True)
+        self._logs = self._logs_by_field(field, pattern, reverse=True)
 
     def group_by(self, attribute: str) -> dict[str, "LogContainer"]:
         """
