@@ -1,5 +1,5 @@
 """
-Tests for "log_container" and "result_entry" modules.
+Tests for "log_container" module.
 """
 
 from datetime import timedelta
@@ -115,9 +115,11 @@ def test_log_container_find_log():
         )
     )
     log = lc.find_log("target", "target::DEBUG*")
+    assert log
     assert log.message == "Debug message"
 
     log = lc.find_log("level", "INFO")
+    assert log
     assert log.target == "target::INFO_message"
 
 
@@ -252,3 +254,69 @@ def test_log_container_many_add_log_copied_not_referenced() -> None:
     assert len(logs1) == 2
     assert len(logs2) == 3
     assert len(lc.get_logs()) == 5
+
+
+def test_log_container_get_logs_by_field_str():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry({"level": "DEBUG"}),
+            ResultEntry({"level": "INFO"}),
+            ResultEntry({"level": "WARN"}),
+        ]
+    )
+    logs = lc.get_logs_by_field("level", r"WARN|INFO")
+    assert len(logs) == 2
+    assert logs[0].level == "INFO"
+    assert logs[1].level == "WARN"
+
+
+def test_log_container_get_logs_by_field_int():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry({"someId": 1}),
+            ResultEntry({"someId": 2}),
+            ResultEntry({"someId": 3}),
+            ResultEntry({"someId": 1}),
+            ResultEntry({"someId": 1}),
+        ]
+    )
+    logs = lc.get_logs_by_field("some_id", 1)
+    assert len(logs) == 3
+    assert all(log.some_id == 1 for log in logs)
+
+
+def test_log_container_remove_logs_str():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry({"level": "DEBUG"}),
+            ResultEntry({"level": "INFO"}),
+            ResultEntry({"level": "WARN"}),
+        ]
+    )
+    lc.remove_logs("level", r"WARN|INFO")
+
+    logs = lc.get_logs()
+    assert len(logs) == 1
+    assert logs[0].level == "DEBUG"
+
+
+def test_log_container_remove_logs_int():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry({"someId": 1}),
+            ResultEntry({"someId": 2}),
+            ResultEntry({"someId": 3}),
+            ResultEntry({"someId": 1}),
+            ResultEntry({"someId": 1}),
+        ]
+    )
+    lc.remove_logs("some_id", 1)
+
+    logs = lc.get_logs()
+    assert len(logs) == 2
+    assert logs[0].some_id == 2
+    assert logs[1].some_id == 3
