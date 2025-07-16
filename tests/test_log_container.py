@@ -302,6 +302,24 @@ def test_log_container_get_logs_by_field_none():
     assert len(logs) == 1
     assert logs[0].some_id is None
 
+
+def test_log_container_get_logs_by_field_filter_type():
+    lc = LogContainer()
+    lc.add_log(
+        [
+            ResultEntry({"level": "DEBUG", "someId": "0"}),
+            ResultEntry({"level": "DEBUG", "someId": 0}),
+        ]
+    )
+    logs = lc.get_logs_by_field("some_id", "0")
+    assert len(logs) == 1
+    assert logs[0].some_id == "0"
+
+    logs = lc.get_logs_by_field("some_id", 0)
+    assert len(logs) == 1
+    assert logs[0].some_id == 0
+
+
 def test_log_container_get_logs_by_field_invalid_key():
     lc = LogContainer()
     lc.add_log(
@@ -314,6 +332,7 @@ def test_log_container_get_logs_by_field_invalid_key():
     logs = lc.get_logs_by_field("invalid_entry", "invalid_pattern")
     assert len(logs) == 0
 
+
 def test_log_container_get_logs_by_field_invalid_pattern_str():
     lc = LogContainer()
     lc.add_log(
@@ -325,6 +344,7 @@ def test_log_container_get_logs_by_field_invalid_pattern_str():
     )
     logs = lc.get_logs_by_field("level", "invalid_pattern")
     assert len(logs) == 0
+
 
 def test_log_container_get_logs_by_field_invalid_pattern_int():
     lc = LogContainer()
@@ -339,6 +359,7 @@ def test_log_container_get_logs_by_field_invalid_pattern_int():
     )
     logs = lc.get_logs_by_field("some_id", 10)
     assert len(logs) == 0
+
 
 def test_log_container_remove_logs_str():
     lc = LogContainer()
