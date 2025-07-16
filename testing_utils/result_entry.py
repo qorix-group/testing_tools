@@ -42,6 +42,8 @@ class ResultEntry:
         setattr(self, name, value)
 
     def __getattribute__(self, name: str) -> Any:
+        # NOTE: this function is passing base implementation on purpose.
+        # Pylance is not able to handle autocompletion of dynamically generated attributes.
         return super().__getattribute__(name)
 
     def __str__(self) -> str:

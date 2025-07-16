@@ -4,6 +4,8 @@ Tests for "result_entry" module.
 
 from datetime import timedelta
 
+import pytest
+
 from testing_utils import ResultEntry
 
 
@@ -55,3 +57,16 @@ def test_result_entry_str():
     assert "level=DEBUG" in str_repr
     assert "target=target::DEBUG_message" in str_repr
     assert "thread_id=ThreadId(1)" in str_repr
+
+
+def test_result_entry_access_invalid_attribute():
+    entry = ResultEntry(
+        {
+            "timestamp": "0:00:00.000001",
+            "level": "DEBUG",
+            "target": "target::DEBUG_message",
+            "threadId": "ThreadId(1)",
+        }
+    )
+    with pytest.raises(AttributeError):
+        _ = entry.invalid_attribute
