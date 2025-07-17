@@ -12,6 +12,15 @@ from typing import Any
 from .result_entry import ResultEntry
 
 
+class _NotSet:
+    """
+    Internal type for representing values not set.
+    """
+
+
+_not_set = _NotSet()
+
+
 class LogContainer:
     """
     A container for storing and querying logs.
@@ -53,14 +62,7 @@ class LogContainer:
         """
         return self._logs[subscript]
 
-    class _NotFound:
-        """
-        Internal type for failed search results.
-        """
-
-    _not_found = _NotFound()
-
-    def _logs_by_field_str(self, field: str, pattern: str, reverse: bool) -> list[ResultEntry]:
+    def _logs_by_field_regex_match(self, field: str, reverse: bool, pattern: str) -> list[ResultEntry]:
         """
         Filter entries using regex matching.
 
@@ -68,25 +70,32 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : str
-            Regex pattern to match.
         reverse : bool
             Return entries not matched.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
         """
+        if not isinstance(pattern, str):
+            raise TypeError("Pattern must be a string")
+
         entries = []
         regex = re.compile(pattern)
         for log in self._logs:
-            found_value = getattr(log, field, self._not_found)
-            if found_value == self._not_found:
+            found_value = getattr(log, field, _not_set)
+            # Field must be set.
+            if isinstance(found_value, _NotSet):
+                if reverse:
+                    entries.append(log)
                 continue
-            if not isinstance(found_value, type(pattern)):
-                continue
-            found = regex.search(found_value) is not None
+
+            # Value casted to "str" must be matched.
+            found = regex.search(str(found_value)) is not None
             if found ^ reverse:
                 entries.append(log)
         return entries
 
-    def _logs_by_field_any(self, field: str, pattern: Any, reverse: bool) -> list[ResultEntry]:
+    def _logs_by_field_exact_match(self, field: str, reverse: bool, value: Any) -> list[ResultEntry]:
         """
         Filter entries by value.
 
@@ -94,24 +103,29 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
         reverse : bool
             Return entries not matched.
+        value : Any
+            Exact value to match.
         """
         entries = []
         for log in self._logs:
-            found_value = getattr(log, field, self._not_found)
-            if found_value == self._not_found:
+            found_value = getattr(log, field, _not_set)
+            # Field must be set.
+            if isinstance(found_value, _NotSet):
+                if reverse:
+                    entries.append(log)
                 continue
-            if not isinstance(found_value, type(pattern)):
-                continue
-            found = found_value == pattern
+
+            # Type and value must be matched.
+            found = isinstance(found_value, type(value)) and found_value == value
             if found ^ reverse:
                 entries.append(log)
         return entries
 
-    def _logs_by_field(self, field: str, pattern: Any, reverse: bool) -> list[ResultEntry]:
+    def _logs_by_field(
+        self, field: str, reverse: bool, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+    ) -> list[ResultEntry]:
         """
         Filter entries by type specific filtering method.
 
@@ -119,18 +133,29 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
-            Regex match is used for 'str' values.
         reverse : bool
             Return entries not matched.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
+            Mutually exclusive with "value".
+        value : Any | _NotSet
+            Exact value to match.
+            Mutually exclusive with "pattern".
         """
-        if isinstance(pattern, str):
-            return self._logs_by_field_str(field, pattern, reverse)
-        else:
-            return self._logs_by_field_any(field, pattern, reverse)
+        pattern_set = not isinstance(pattern, _NotSet)
+        value_set = not isinstance(value, _NotSet)
 
-    def contains_log(self, field: str, pattern: Any) -> bool:
+        if pattern_set and not value_set:
+            return self._logs_by_field_regex_match(field, reverse, pattern)
+        elif not pattern_set and value_set:
+            return self._logs_by_field_exact_match(field, reverse, value)
+        elif pattern_set and value_set:
+            raise RuntimeError("Pattern and value parameters are mutually exclusive")
+        else:
+            raise RuntimeError("Either pattern or value parameters must be set")
+
+    def contains_log(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set) -> bool:
         """
         Check if a LogContainer contains a ResultEntry with the given field and pattern.
 
@@ -142,15 +167,11 @@ class LogContainer:
             Pattern to match.
             Regex match is used for 'str' values.
         """
-        return len(self._logs_by_field(field, pattern, reverse=False)) > 0
+        return len(self._logs_by_field(field, reverse=False, pattern=pattern, value=value)) > 0
 
-    def contains_id(self, entry_id: str) -> bool:
-        """
-        Check if a ResultEntry with the given ID is contained in the container.
-        """
-        return any(log.id == entry_id for log in self._logs)
-
-    def get_logs_by_field(self, field: str, pattern: Any) -> "LogContainer":
+    def get_logs_by_field(
+        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+    ) -> "LogContainer":
         """
         Get all ResultEntry messages that match the given field and pattern.
 
@@ -158,13 +179,19 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
-            Regex match is used for 'str' values.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
+            Mutually exclusive with "value".
+        value : Any | _NotSet
+            Exact value to match.
+            Mutually exclusive with "pattern".
         """
-        return LogContainer(self._logs_by_field(field, pattern, reverse=False))
+        return LogContainer(self._logs_by_field(field, reverse=False, pattern=pattern, value=value))
 
-    def find_log(self, field: str, pattern: Any) -> ResultEntry | None:
+    def find_log(
+        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+    ) -> ResultEntry | None:
         """
         Find a ResultEntry message that matches the given field and pattern.
         Returns the first match or None if no match is found.
@@ -174,11 +201,15 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
-            Regex match is used for 'str' values.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
+            Mutually exclusive with "value".
+        value : Any | _NotSet
+            Exact value to match.
+            Mutually exclusive with "pattern".
         """
-        findings = self._logs_by_field(field, pattern, reverse=False)
+        findings = self._logs_by_field(field, reverse=False, pattern=pattern, value=value)
         if len(findings) == 1:
             return findings[0]
         if len(findings) > 1:
@@ -214,7 +245,7 @@ class LogContainer:
         """
         self._logs.clear()
 
-    def remove_logs(self, field: str, pattern: Any):
+    def remove_logs(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set):
         """
         Remove all ResultEntry messages that match the given field and pattern.
 
@@ -222,11 +253,15 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
-            Regex match is used for 'str' values.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
+            Mutually exclusive with "value".
+        value : Any | _NotSet
+            Exact value to match.
+            Mutually exclusive with "pattern".
         """
-        self._logs = self._logs_by_field(field, pattern, reverse=True)
+        self._logs = self._logs_by_field(field, reverse=True, pattern=pattern, value=value)
 
     def group_by(self, attribute: str) -> dict[str, "LogContainer"]:
         """
