@@ -52,89 +52,89 @@ class LogContainer:
 
     def __len__(self):
         """
-        Get the number of ResultEntry messages in the container.
+        Get the number of logs in the container.
         """
         return len(self._logs)
 
     def __getitem__(self, subscript):
         """
-        Get a ResultEntry message by index.
+        Get the log by index.
         """
         return self._logs[subscript]
 
     def _logs_by_field_regex_match(self, field: str, reverse: bool, pattern: str) -> list[ResultEntry]:
         """
-        Filter entries using regex matching.
+        Filter logs using regex matching.
+        Underlying field value is casted to str.
 
         Parameters
         ----------
         field : str
             Name of the field to match.
         reverse : bool
-            Return entries not matched.
+            Return logs not matched.
         pattern : str | _NotSet
             Regex pattern to match.
-            Underlying field value is casted to str.
         """
         if not isinstance(pattern, str):
             raise TypeError("Pattern must be a string")
 
-        entries = []
+        logs = []
         regex = re.compile(pattern)
         for log in self._logs:
             found_value = getattr(log, field, _not_set)
             # Field must be set.
             if isinstance(found_value, _NotSet):
                 if reverse:
-                    entries.append(log)
+                    logs.append(log)
                 continue
 
             # Value casted to "str" must be matched.
             found = regex.search(str(found_value)) is not None
             if found ^ reverse:
-                entries.append(log)
-        return entries
+                logs.append(log)
+        return logs
 
     def _logs_by_field_exact_match(self, field: str, reverse: bool, value: Any) -> list[ResultEntry]:
         """
-        Filter entries by value.
+        Filter logs using exact matching.
 
         Parameters
         ----------
         field : str
             Name of the field to match.
         reverse : bool
-            Return entries not matched.
+            Return logs not matched.
         value : Any
             Exact value to match.
         """
-        entries = []
+        logs = []
         for log in self._logs:
             found_value = getattr(log, field, _not_set)
             # Field must be set.
             if isinstance(found_value, _NotSet):
                 if reverse:
-                    entries.append(log)
+                    logs.append(log)
                 continue
 
             # Type and value must be matched.
             found = isinstance(found_value, type(value)) and found_value == value
             if found ^ reverse:
-                entries.append(log)
-        return entries
+                logs.append(log)
+        return logs
 
     def _logs_by_field(
         self, field: str, reverse: bool, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
     ) -> list[ResultEntry]:
         """
-        Filter entries by type specific filtering method.
+        Select filtration method and filter logs.
 
         Parameters
         ----------
         field : str
             Name of the field to match.
         reverse : bool
-            Return entries not matched.
+            Return logs not matched.
         pattern : str | _NotSet
             Regex pattern to match.
             Underlying field value is casted to str.
@@ -157,15 +157,19 @@ class LogContainer:
 
     def contains_log(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set) -> bool:
         """
-        Check if a LogContainer contains a ResultEntry with the given field and pattern.
+        Check if the container contains logs matching the given field and pattern or value.
 
         Parameters
         ----------
         field : str
             Name of the field to match.
-        pattern : Any
-            Pattern to match.
-            Regex match is used for 'str' values.
+        pattern : str | _NotSet
+            Regex pattern to match.
+            Underlying field value is casted to str.
+            Mutually exclusive with "value".
+        value : Any | _NotSet
+            Exact value to match.
+            Mutually exclusive with "pattern".
         """
         return len(self._logs_by_field(field, reverse=False, pattern=pattern, value=value)) > 0
 
@@ -173,7 +177,7 @@ class LogContainer:
         self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
     ) -> "LogContainer":
         """
-        Get all ResultEntry messages that match the given field and pattern.
+        Get all logs matching the given field and pattern or value.
 
         Parameters
         ----------
@@ -193,9 +197,9 @@ class LogContainer:
         self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
     ) -> ResultEntry | None:
         """
-        Find a ResultEntry message that matches the given field and pattern.
-        Returns the first match or None if no match is found.
-        Raises ValueError if multiple matches are found.
+        Find a log that matches the given field and pattern or value.
+        Returns the first match, or None if no match is found.
+        Raises ValueError if multiple matches were found.
 
         Parameters
         ----------
@@ -219,12 +223,12 @@ class LogContainer:
 
     def add_log(self, log: ResultEntry | list[ResultEntry]) -> None:
         """
-        Add ResultEntry messages to the container.
+        Add log to the container.
 
         Parameters
         ----------
         log : ResultEntry | list[ResultEntry]
-            Message or messages to add.
+            Logs to be added.
         """
         if isinstance(log, ResultEntry):
             self._logs.append(log)
@@ -235,19 +239,19 @@ class LogContainer:
 
     def get_logs(self) -> list[ResultEntry]:
         """
-        Get all ResultEntry messages.
+        Get all logs.
         """
         return self._logs[:]
 
     def clear_logs(self):
         """
-        Clear all ResultEntry messages.
+        Clear all logs.
         """
         self._logs.clear()
 
     def remove_logs(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set):
         """
-        Remove all ResultEntry messages that match the given field and pattern.
+        Remove all logs matching the given field and pattern or value.
 
         Parameters
         ----------
@@ -265,9 +269,14 @@ class LogContainer:
 
     def group_by(self, attribute: str) -> dict[str, "LogContainer"]:
         """
-        Group ResultEntry messages by a specified attribute.
+        Group logs by the given attribute.
         Returns a dictionary where the keys are the unique values of the attribute,
         and the values are LogContainer instances containing the grouped logs.
+
+        Parameters
+        ----------
+        attribute : str
+            Attribute to group logs.
         """
         sorted_logs_by_attr = sorted(self._logs, key=attrgetter(attribute))
         grouped = groupby(sorted_logs_by_attr, key=attrgetter(attribute))
