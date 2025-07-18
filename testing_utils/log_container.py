@@ -243,13 +243,9 @@ class LogContainer:
         """
         return self._logs[:]
 
-    def clear_logs(self):
-        """
-        Clear all logs.
-        """
-        self._logs.clear()
-
-    def remove_logs(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set):
+    def remove_logs(
+        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+    ) -> "LogContainer":
         """
         Remove all logs matching the given field and pattern or value.
 
@@ -265,7 +261,7 @@ class LogContainer:
             Exact value to match.
             Mutually exclusive with "pattern".
         """
-        self._logs = self._logs_by_field(field, reverse=True, pattern=pattern, value=value)
+        return LogContainer(self._logs_by_field(field, reverse=True, pattern=pattern, value=value))
 
     def group_by(self, attribute: str) -> dict[str, "LogContainer"]:
         """

@@ -750,16 +750,6 @@ class TestGetLogs:
         assert len(logs) == 0
 
 
-class TestClearLogs:
-    """
-    Tests for `clear_logs`.
-    """
-
-    def test_ok(self, lc_basic: LogContainer):
-        lc_basic.clear_logs()
-        assert lc_basic.get_logs() == []
-
-
 class TestRemoveLogs:
     """
     Tests for `remove_logs`.
@@ -784,9 +774,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("level", pattern=r"WARN|INFO")
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("level", pattern=r"WARN|INFO")
         assert len(logs) == 1
         assert logs[0].level == "DEBUG"
 
@@ -803,9 +791,7 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 12}),
             ]
         )
-        lc.remove_logs("some_id", pattern=r"^1$")
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("some_id", pattern=r"^1$")
         assert len(logs) == 4
         assert logs[0].some_id == 2
         assert logs[1].some_id == 3
@@ -823,9 +809,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG", "someId": 100}),
             ]
         )
-        lc.remove_logs("some_id", pattern="^0$")
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("some_id", pattern="^0$")
         assert len(logs) == 3
         assert logs[0].some_id == 6543
         assert logs[1].some_id == "10"
@@ -840,8 +824,8 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("invalid", pattern="WARN")
-        assert len(lc) == 3
+        logs = lc.remove_logs("invalid", pattern="WARN")
+        assert len(logs) == 3
 
     def test_pattern_invalid_value(self):
         lc = LogContainer()
@@ -852,8 +836,8 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("level", pattern="invalid")
-        assert len(lc) == 3
+        logs = lc.remove_logs("level", pattern="invalid")
+        assert len(logs) == 3
 
     def test_value_str_ok(self):
         lc = LogContainer()
@@ -864,9 +848,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("level", value="INFO")
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("level", value="INFO")
         assert len(logs) == 2
         assert logs[0].level == "DEBUG"
         assert logs[1].level == "WARN"
@@ -884,9 +866,7 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 12}),
             ]
         )
-        lc.remove_logs("some_id", value=1)
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("some_id", value=1)
         assert len(logs) == 4
         assert logs[0].some_id == 2
         assert logs[1].some_id == 3
@@ -904,9 +884,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "INFO", "someId": 1}),
             ]
         )
-        lc.remove_logs("some_id", value=None)
-
-        logs = lc.get_logs()
+        logs = lc.remove_logs("some_id", value=None)
         assert len(logs) == 4
         assert all(log is not None for log in logs)
 
@@ -922,20 +900,19 @@ class TestRemoveLogs:
             ]
         )
 
-        lc.remove_logs("some_id", value="0")
-        logs = lc.get_logs()
+        logs = lc.remove_logs("some_id", value="0")
         assert len(logs) == 4
         assert logs[0].some_id == 0
         assert logs[1].some_id == 6543
         assert logs[2].some_id == "10"
         assert logs[3].some_id == 100
 
-        lc.remove_logs("some_id", value=0)
-        logs = lc.get_logs()
-        assert len(logs) == 3
-        assert logs[0].some_id == 6543
-        assert logs[1].some_id == "10"
-        assert logs[2].some_id == 100
+        logs = lc.remove_logs("some_id", value=0)
+        assert len(logs) == 4
+        assert logs[0].some_id == "0"
+        assert logs[1].some_id == 6543
+        assert logs[2].some_id == "10"
+        assert logs[3].some_id == 100
 
     def test_value_invalid_field(self):
         lc = LogContainer()
@@ -946,8 +923,8 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("invalid", value="WARN")
-        assert len(lc) == 3
+        logs = lc.remove_logs("invalid", value="WARN")
+        assert len(logs) == 3
 
     def test_value_invalid_str_value(self):
         lc = LogContainer()
@@ -958,8 +935,8 @@ class TestRemoveLogs:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        lc.remove_logs("level", value="invalid")
-        assert len(lc) == 3
+        logs = lc.remove_logs("level", value="invalid")
+        assert len(logs) == 3
 
     def test_value_invalid_int_value(self):
         lc = LogContainer()
@@ -972,8 +949,8 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 1}),
             ]
         )
-        lc.remove_logs("some_id", value=10)
-        assert len(lc) == 5
+        logs = lc.remove_logs("some_id", value=10)
+        assert len(logs) == 5
 
 
 class TestGroupBy:
