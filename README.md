@@ -203,7 +203,7 @@ class TestExample(Scenario):
     ...
 ```
 
-Methods can be overrridden to utilize test-specific fixtures:
+Methods can be overridden to utilize test-specific fixtures:
 
 ```python
 import pytest
