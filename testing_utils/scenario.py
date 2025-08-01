@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 from pytest import FixtureRequest
 
-from .cargo_tools import select_bin_path
+from .build_tools import BuildTools
 from .log_container import LogContainer
 from .result_entry import ResultEntry
 
@@ -45,6 +45,13 @@ class Scenario(ABC):
     """
     Base test scenario definition.
     """
+
+    @pytest.fixture(scope="class")
+    @abstractmethod
+    def build_tools(self, *args, **kwargs) -> BuildTools:
+        """
+        Build tools used to handle test scenario.
+        """
 
     @pytest.fixture(scope="class")
     @abstractmethod
@@ -82,7 +89,7 @@ class Scenario(ABC):
         return False
 
     @pytest.fixture(scope="class")
-    def bin_path(self, request: FixtureRequest) -> Path:
+    def target_path(self, build_tools: BuildTools, request: FixtureRequest) -> Path:
         """
         Return path to test scenario executable.
 
@@ -91,12 +98,12 @@ class Scenario(ABC):
         request : FixtureRequest
             Test request built-in fixture.
         """
-        return select_bin_path(request.config)
+        return build_tools.select_target_path(request.config, expect_exists=True)
 
     @pytest.fixture(scope="class")
     def results(
         self,
-        bin_path: Path | str,
+        target_path: Path | str,
         scenario_name: str,
         test_config: dict[str, Any],
         execution_timeout: float,
@@ -108,7 +115,7 @@ class Scenario(ABC):
 
         Parameters
         ----------
-        bin_path : Path | str
+        target_path : Path | str
             Path to test scenarios executable.
         scenario_name : str
             Name of a test scenario to run.
@@ -123,11 +130,11 @@ class Scenario(ABC):
         # Run scenario.
         hang = False
 
-        command = [bin_path, "--name", scenario_name]
+        command = [target_path, "--name", scenario_name, "--input", test_config_str]
         stderr_param = PIPE if self.capture_stderr() else None
-        with Popen(command, stdout=PIPE, stdin=PIPE, stderr=stderr_param, text=True) as p:
+        with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
             try:
-                stdout, stderr = p.communicate(test_config_str, execution_timeout)
+                stdout, stderr = p.communicate(timeout=execution_timeout)
             except TimeoutExpired:
                 hang = True
                 p.kill()
