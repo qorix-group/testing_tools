@@ -248,3 +248,18 @@ To run the tests, use:
 ```bash
 pytest -vs .
 ```
+
+### `pre-commit`
+
+Install `pre-commit` and set it up in this repository:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run `pre-commit`:
+
+```bash
+pre-commit run -a
+```
