@@ -18,5 +18,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = ["testing_utils"]
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+
 [project.optional-dependencies]
 dev = ["ruff"]

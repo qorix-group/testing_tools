@@ -13,7 +13,6 @@ from subprocess import PIPE, Popen, TimeoutExpired
 from typing import Any
 
 import pytest
-from pytest import FixtureRequest
 
 from .build_tools import BuildTools
 from .log_container import LogContainer
@@ -68,7 +67,7 @@ class Scenario(ABC):
         """
 
     @pytest.fixture(scope="class")
-    def execution_timeout(self, request: FixtureRequest, *args, **kwargs) -> float:
+    def execution_timeout(self, request: pytest.FixtureRequest, *args, **kwargs) -> float:
         """
         Test execution timeout in seconds.
 
@@ -89,7 +88,7 @@ class Scenario(ABC):
         return False
 
     @pytest.fixture(scope="class")
-    def target_path(self, build_tools: BuildTools, request: FixtureRequest) -> Path:
+    def target_path(self, build_tools: BuildTools, request: pytest.FixtureRequest) -> Path:
         """
         Return path to test scenario executable.
 

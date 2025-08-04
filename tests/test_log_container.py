@@ -73,7 +73,7 @@ class TestIterNext:
     def test_empty(self):
         lc = LogContainer()
         for _ in lc:
-            assert False, "Statement shouldn't be reached"
+            raise RuntimeError("Statement shouldn't be reached")
 
 
 class TestLen:
@@ -129,7 +129,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.contains_log("level", pattern=r"WARN|INFO")
 
@@ -144,7 +144,7 @@ class TestContainsLog:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         assert lc.contains_log("some_id", pattern=r"^1$")
 
@@ -157,7 +157,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         assert lc.contains_log("some_id", pattern="^0$")
         assert lc.contains_log("some_id", pattern="0")
@@ -169,7 +169,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert not lc.contains_log("invalid", pattern="WARN")
 
@@ -180,7 +180,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert not lc.contains_log("level", pattern="invalid")
 
@@ -191,7 +191,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.contains_log("level", value="INFO")
 
@@ -206,7 +206,7 @@ class TestContainsLog:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         assert lc.contains_log("some_id", value=1)
 
@@ -219,7 +219,7 @@ class TestContainsLog:
                 ResultEntry({"level": "INFO", "someId": None}),
                 ResultEntry({"level": "WARN", "someId": 2}),
                 ResultEntry({"level": "INFO", "someId": 1}),
-            ]
+            ],
         )
         assert lc.contains_log("some_id", value=None)
 
@@ -232,7 +232,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         assert lc.contains_log("some_id", value="0")
         assert lc.contains_log("some_id", value=0)
@@ -244,7 +244,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert not lc.contains_log("invalid", value="WARN")
 
@@ -255,7 +255,7 @@ class TestContainsLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert not lc.contains_log("level", value="invalid")
 
@@ -268,7 +268,7 @@ class TestContainsLog:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 1}),
-            ]
+            ],
         )
         assert not lc.contains_log("some_id", value=10)
 
@@ -295,7 +295,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("level", pattern=r"WARN|INFO")
         assert len(logs) == 2
@@ -313,7 +313,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", pattern=r"^1$")
         assert len(logs) == 3
@@ -328,7 +328,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", pattern="^0$")
         assert len(logs) == 2
@@ -349,7 +349,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("invalid", pattern="WARN")
         assert len(logs) == 0
@@ -361,7 +361,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("level", pattern="invalid")
         assert len(logs) == 0
@@ -373,7 +373,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("level", value="INFO")
         assert len(logs) == 1
@@ -390,7 +390,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", value=1)
         assert len(logs) == 3
@@ -405,7 +405,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "INFO", "someId": None}),
                 ResultEntry({"level": "WARN", "someId": 2}),
                 ResultEntry({"level": "INFO", "someId": 1}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", value=None)
         assert len(logs) == 1
@@ -420,7 +420,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", value="0")
         assert len(logs) == 1
@@ -437,7 +437,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("invalid", value="WARN")
         assert len(logs) == 0
@@ -449,7 +449,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("level", value="invalid")
         assert len(logs) == 0
@@ -463,7 +463,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 1}),
-            ]
+            ],
         )
         logs = lc.get_logs_by_field("some_id", value=10)
         assert len(logs) == 0
@@ -490,7 +490,7 @@ class TestFindLog:
             [
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
-            ]
+            ],
         )
         log = lc.find_log("level", pattern=r"WARN|INFO")
         assert log
@@ -505,7 +505,7 @@ class TestFindLog:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         log = lc.find_log("some_id", pattern=r"^1$")
         assert log
@@ -518,9 +518,9 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Multiple logs found for field='level' and pattern='WARN|INFO'"):
             _ = lc.find_log("level", pattern=r"WARN|INFO")
 
     def test_pattern_cast_type(self):
@@ -531,7 +531,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         log = lc.find_log("some_id", pattern="^0$")
         assert log
@@ -544,7 +544,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.find_log("invalid", pattern="WARN") is None
 
@@ -555,7 +555,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.find_log("level", pattern="invalid") is None
 
@@ -566,7 +566,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         log = lc.find_log("level", value="INFO")
         assert log
@@ -581,7 +581,7 @@ class TestFindLog:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         log = lc.find_log("some_id", value=1)
         assert log
@@ -596,7 +596,7 @@ class TestFindLog:
                 ResultEntry({"level": "INFO", "someId": None}),
                 ResultEntry({"level": "WARN", "someId": 2}),
                 ResultEntry({"level": "INFO", "someId": 1}),
-            ]
+            ],
         )
         log = lc.find_log("some_id", value=None)
         assert log
@@ -611,7 +611,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         log = lc.find_log("some_id", value="0")
         assert log
@@ -628,7 +628,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.find_log("invalid", value="WARN") is None
 
@@ -639,7 +639,7 @@ class TestFindLog:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         assert lc.find_log("level", value="invalid") is None
 
@@ -652,7 +652,7 @@ class TestFindLog:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 1}),
-            ]
+            ],
         )
         assert lc.find_log("some_id", value=10) is None
 
@@ -671,7 +671,7 @@ class TestAddLog:
                     "fields": {"message": "Debug message"},
                     "target": "target::DEBUG_message",
                     "threadId": "ThreadId(1)",
-                }
+                },
             ),
             ResultEntry(
                 {
@@ -679,7 +679,7 @@ class TestAddLog:
                     "level": "INFO",
                     "target": "target::INFO_message",
                     "threadId": "ThreadId(2)",
-                }
+                },
             ),
         ]
 
@@ -772,7 +772,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("level", pattern=r"WARN|INFO")
         assert len(logs) == 1
@@ -789,7 +789,7 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         logs = lc.remove_logs("some_id", pattern=r"^1$")
         assert len(logs) == 4
@@ -807,7 +807,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
         logs = lc.remove_logs("some_id", pattern="^0$")
         assert len(logs) == 3
@@ -822,7 +822,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("invalid", pattern="WARN")
         assert len(logs) == 3
@@ -834,7 +834,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("level", pattern="invalid")
         assert len(logs) == 3
@@ -846,7 +846,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("level", value="INFO")
         assert len(logs) == 2
@@ -864,7 +864,7 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 11}),
                 ResultEntry({"someId": 12}),
-            ]
+            ],
         )
         logs = lc.remove_logs("some_id", value=1)
         assert len(logs) == 4
@@ -882,7 +882,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "INFO", "someId": None}),
                 ResultEntry({"level": "WARN", "someId": 2}),
                 ResultEntry({"level": "INFO", "someId": 1}),
-            ]
+            ],
         )
         logs = lc.remove_logs("some_id", value=None)
         assert len(logs) == 4
@@ -897,7 +897,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG", "someId": 6543}),
                 ResultEntry({"level": "DEBUG", "someId": "10"}),
                 ResultEntry({"level": "DEBUG", "someId": 100}),
-            ]
+            ],
         )
 
         logs = lc.remove_logs("some_id", value="0")
@@ -921,7 +921,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("invalid", value="WARN")
         assert len(logs) == 3
@@ -933,7 +933,7 @@ class TestRemoveLogs:
                 ResultEntry({"level": "DEBUG"}),
                 ResultEntry({"level": "INFO"}),
                 ResultEntry({"level": "WARN"}),
-            ]
+            ],
         )
         logs = lc.remove_logs("level", value="invalid")
         assert len(logs) == 3
@@ -947,7 +947,7 @@ class TestRemoveLogs:
                 ResultEntry({"someId": 3}),
                 ResultEntry({"someId": 1}),
                 ResultEntry({"someId": 1}),
-            ]
+            ],
         )
         logs = lc.remove_logs("some_id", value=10)
         assert len(logs) == 5
@@ -968,8 +968,8 @@ class TestGroupBy:
                     "fields": {"message": "Info message 1"},
                     "target": "target::INFO_message",
                     "threadId": "ThreadId(2)",
-                }
-            )
+                },
+            ),
         )
         lc.add_log(
             ResultEntry(
@@ -979,8 +979,8 @@ class TestGroupBy:
                     "fields": {"message": "Info message 2"},
                     "target": "target::INFO_message",
                     "threadId": "ThreadId(1)",
-                }
-            )
+                },
+            ),
         )
         lc.add_log(
             ResultEntry(
@@ -990,8 +990,8 @@ class TestGroupBy:
                     "fields": {"message": "Info message 3"},
                     "target": "target::INFO_message",
                     "threadId": "ThreadId(2)",
-                }
-            )
+                },
+            ),
         )
         groups = lc.group_by("thread_id")
         assert len(groups) == 2
