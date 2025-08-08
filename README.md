@@ -108,10 +108,10 @@ Usage:
 
 ```python
 from pathlib import Path
-from pytest import FeatureRequest
+import pytest
 from testing_utils import BazelTools
 
-def test_example(request: FeatureRequest) -> None:
+def test_example(request: pytest.FeatureRequest) -> None:
     build_tools = BazelTools()
     target_path: Path = build_tools.select_target_path(request.config)
     ...
@@ -246,5 +246,20 @@ class TestExample(Scenario)
 To run the tests, use:
 
 ```bash
-pytest -vs .
+pytest -vs
+```
+
+### `pre-commit`
+
+Install `pre-commit` and set it up in this repository:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run `pre-commit`:
+
+```bash
+pre-commit run -a
 ```

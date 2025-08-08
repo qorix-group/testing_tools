@@ -48,7 +48,7 @@ class LogContainer:
             result = self._logs[self._index]
             self._index += 1
             return result
-        raise StopIteration()
+        raise StopIteration
 
     def __len__(self):
         """
@@ -62,7 +62,7 @@ class LogContainer:
         """
         return self._logs[subscript]
 
-    def _logs_by_field_regex_match(self, field: str, reverse: bool, pattern: str) -> list[ResultEntry]:
+    def _logs_by_field_regex_match(self, field: str, pattern: str, *, reverse: bool) -> list[ResultEntry]:
         """
         Filter logs using regex matching.
         Underlying field value is casted to str.
@@ -71,10 +71,10 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        reverse : bool
-            Return logs not matched.
         pattern : str | _NotSet
             Regex pattern to match.
+        reverse : bool
+            Return logs not matched.
         """
         if not isinstance(pattern, str):
             raise TypeError("Pattern must be a string")
@@ -95,7 +95,7 @@ class LogContainer:
                 logs.append(log)
         return logs
 
-    def _logs_by_field_exact_match(self, field: str, reverse: bool, value: Any) -> list[ResultEntry]:
+    def _logs_by_field_exact_match(self, field: str, value: Any, *, reverse: bool) -> list[ResultEntry]:
         """
         Filter logs using exact matching.
 
@@ -103,10 +103,10 @@ class LogContainer:
         ----------
         field : str
             Name of the field to match.
-        reverse : bool
-            Return logs not matched.
         value : Any
             Exact value to match.
+        reverse : bool
+            Return logs not matched.
         """
         logs = []
         for log in self._logs:
@@ -124,7 +124,12 @@ class LogContainer:
         return logs
 
     def _logs_by_field(
-        self, field: str, reverse: bool, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+        self,
+        field: str,
+        *,
+        reverse: bool,
+        pattern: str | _NotSet = _not_set,
+        value: Any | _NotSet = _not_set,
     ) -> list[ResultEntry]:
         """
         Select filtration method and filter logs.
@@ -147,13 +152,12 @@ class LogContainer:
         value_set = not isinstance(value, _NotSet)
 
         if pattern_set and not value_set:
-            return self._logs_by_field_regex_match(field, reverse, pattern)
-        elif not pattern_set and value_set:
-            return self._logs_by_field_exact_match(field, reverse, value)
-        elif pattern_set and value_set:
+            return self._logs_by_field_regex_match(field, pattern, reverse=reverse)
+        if not pattern_set and value_set:
+            return self._logs_by_field_exact_match(field, value, reverse=reverse)
+        if pattern_set and value_set:
             raise RuntimeError("Pattern and value parameters are mutually exclusive")
-        else:
-            raise RuntimeError("Either pattern or value parameters must be set")
+        raise RuntimeError("Either pattern or value parameters must be set")
 
     def contains_log(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set) -> bool:
         """
@@ -174,7 +178,11 @@ class LogContainer:
         return len(self._logs_by_field(field, reverse=False, pattern=pattern, value=value)) > 0
 
     def get_logs_by_field(
-        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+        self,
+        field: str,
+        *,
+        pattern: str | _NotSet = _not_set,
+        value: Any | _NotSet = _not_set,
     ) -> "LogContainer":
         """
         Get all logs matching the given field and pattern or value.
@@ -194,7 +202,11 @@ class LogContainer:
         return LogContainer(self._logs_by_field(field, reverse=False, pattern=pattern, value=value))
 
     def find_log(
-        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+        self,
+        field: str,
+        *,
+        pattern: str | _NotSet = _not_set,
+        value: Any | _NotSet = _not_set,
     ) -> ResultEntry | None:
         """
         Find a log that matches the given field and pattern or value.
@@ -244,7 +256,11 @@ class LogContainer:
         return self._logs[:]
 
     def remove_logs(
-        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+        self,
+        field: str,
+        *,
+        pattern: str | _NotSet = _not_set,
+        value: Any | _NotSet = _not_set,
     ) -> "LogContainer":
         """
         Remove all logs matching the given field and pattern or value.

@@ -16,7 +16,7 @@ def test_result_entry_creation_and_properties():
             "level": "DEBUG",
             "target": "target::DEBUG_message",
             "threadId": "ThreadId(1)",
-        }
+        },
     )
     assert entry.timestamp == str(timedelta(microseconds=1))
     assert entry.level == "DEBUG"
@@ -32,7 +32,7 @@ def test_result_orchestration_creation_and_properties():
             "fields": {"message": "Debug message"},
             "target": "target::DEBUG_message",
             "threadId": "ThreadId(1)",
-        }
+        },
     )
 
     assert entry.timestamp == str(timedelta(microseconds=10))
@@ -50,7 +50,7 @@ def test_result_entry_str():
             "fields": {"message": "Debug message"},
             "target": "target::DEBUG_message",
             "threadId": "ThreadId(1)",
-        }
+        },
     )
     str_repr = str(entry)
     assert "timestamp=0:00:01.0001" in str_repr
@@ -66,7 +66,7 @@ def test_result_entry_access_invalid_attribute():
             "level": "DEBUG",
             "target": "target::DEBUG_message",
             "threadId": "ThreadId(1)",
-        }
+        },
     )
     with pytest.raises(AttributeError):
         _ = entry.invalid_attribute

@@ -10,7 +10,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
 from typing import Any
 
-from pytest import Config, UsageError
+import pytest
 
 # region common
 
@@ -57,7 +57,7 @@ class BuildTools(ABC):
         self._build_timeout = build_timeout
 
     @abstractmethod
-    def find_target_path(self, target_name: str, expect_exists: bool) -> Path:
+    def find_target_path(self, target_name: str, *, expect_exists: bool) -> Path:
         """
         Find path to executable.
 
@@ -70,7 +70,7 @@ class BuildTools(ABC):
         """
 
     @abstractmethod
-    def select_target_path(self, config: Config, expect_exists: bool) -> Path:
+    def select_target_path(self, config: pytest.Config, *, expect_exists: bool) -> Path:
         """
         Select executable path based on implementation specific options.
 
@@ -143,7 +143,7 @@ class CargoTools(BuildTools):
         # Load stdout as JSON data.
         return json.loads(stdout)
 
-    def find_target_path(self, target_name: str, expect_exists: bool = True) -> Path:
+    def find_target_path(self, target_name: str, *, expect_exists: bool = True) -> Path:
         """
         Find path to executable.
         Target directory is taken from Cargo metadata.
@@ -169,7 +169,7 @@ class CargoTools(BuildTools):
 
         return target_path
 
-    def select_target_path(self, config: Config, expect_exists: bool) -> Path:
+    def select_target_path(self, config: pytest.Config, *, expect_exists: bool) -> Path:
         """
         Select executable path based on "--target-path" and "--target-name" options.
         Execution order is following:
@@ -188,26 +188,26 @@ class CargoTools(BuildTools):
         if option_target_path := config.getoption(self._target_path_flag, default=None):  # type: ignore
             # Check path is valid.
             if not isinstance(option_target_path, Path):
-                raise UsageError(f"Invalid executable path type: {type(option_target_path)}")
+                raise pytest.UsageError(f"Invalid executable path type: {type(option_target_path)}")
             if expect_exists and not option_target_path.is_file():
-                raise UsageError(f"Invalid executable path: {option_target_path}")
+                raise pytest.UsageError(f"Invalid executable path: {option_target_path}")
 
             return option_target_path
 
         if option_target_name := config.getoption(self._target_name_flag, default=None):  # type: ignore
             # Check name type is valid.
             if not isinstance(option_target_name, str):
-                raise UsageError(f"Invalid executable name type: {type(option_target_name)}")
+                raise pytest.UsageError(f"Invalid executable name type: {type(option_target_name)}")
             # Find path, rethrow as 'UsageError' on errors.
             # Timeouts are rethrown as 'TimeoutExpired'.
             try:
-                return self.find_target_path(option_target_name, expect_exists)
+                return self.find_target_path(option_target_name, expect_exists=expect_exists)
             except TimeoutExpired as e:
                 raise e
             except Exception as e:
-                raise UsageError from e
+                raise pytest.UsageError from e
 
-        raise UsageError(f'Either "{self._target_path_flag}" or "{self._target_name_flag}" must be set')
+        raise pytest.UsageError(f'Either "{self._target_path_flag}" or "{self._target_name_flag}" must be set')
 
     def build(self, target_name: str) -> Path:
         """
@@ -294,7 +294,7 @@ class BazelTools(BuildTools):
         # Load stdout as list of strings.
         return stdout.strip().split("\n")
 
-    def find_target_path(self, target_name: str, expect_exists: bool = True) -> Path:
+    def find_target_path(self, target_name: str, *, expect_exists: bool = True) -> Path:
         """
         Find path to executable.
         Target directory is taken from Cargo metadata.
@@ -337,7 +337,7 @@ class BazelTools(BuildTools):
 
         return target_path
 
-    def select_target_path(self, config: Config, expect_exists: bool) -> Path:
+    def select_target_path(self, config: pytest.Config, *, expect_exists: bool) -> Path:
         """
         Select executable path based on "--target-name" option.
 
@@ -351,17 +351,17 @@ class BazelTools(BuildTools):
         if option_target_name := config.getoption(self._target_name_flag, default=None):  # type: ignore
             # Check name type is valid.
             if not isinstance(option_target_name, str):
-                raise UsageError(f"Invalid executable name type: {type(option_target_name)}")
+                raise pytest.UsageError(f"Invalid executable name type: {type(option_target_name)}")
             # Find path, rethrow as 'UsageError' on errors.
             # Timeouts are rethrown as 'TimeoutExpired'.
             try:
-                return self.find_target_path(option_target_name, expect_exists)
+                return self.find_target_path(option_target_name, expect_exists=expect_exists)
             except TimeoutExpired as e:
                 raise e
             except Exception as e:
-                raise UsageError from e
+                raise pytest.UsageError from e
 
-        raise UsageError(f'"{self._target_name_flag}" must be set')
+        raise pytest.UsageError(f'"{self._target_name_flag}" must be set')
 
     def build(self, target_name: str) -> Path:
         """

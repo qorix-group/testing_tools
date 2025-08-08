@@ -1,0 +1,43 @@
+repos:
+  # Common language-agnostic checks.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  # Python checks.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.7
+    hooks:
+      - id: ruff-format
+        args: ["--diff"]
+      - id: ruff-check
+
+  # Rust checks.
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        args:
+          ["--manifest-path", "test_scenarios_rust/Cargo.toml", "--", "--check"]
+      - id: cargo-check
+        args: ["--manifest-path", "test_scenarios_rust/Cargo.toml"]
+      - id: clippy
+        args:
+          [
+            "--manifest-path",
+            "test_scenarios_rust/Cargo.toml",
+            "--all-targets",
+            "--all-features",
+          ]
+
+  # C++ checks.
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-format
