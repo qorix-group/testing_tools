@@ -101,17 +101,9 @@ class Scenario(ABC):
         return build_tools.select_target_path(request.config, expect_exists=True)
 
     @pytest.fixture(scope="class")
-    def results(
-        self,
-        target_path: Path | str,
-        scenario_name: str,
-        test_config: dict[str, Any],
-        execution_timeout: float,
-        *args,
-        **kwargs,
-    ) -> ScenarioResult:
+    def command(self, target_path: Path | str, scenario_name: str, test_config: dict[str, Any]) -> list[str]:
         """
-        Execute test scenario executable and return results.
+        Command to invoke.
 
         Parameters
         ----------
@@ -121,16 +113,32 @@ class Scenario(ABC):
             Name of a test scenario to run.
         test_config : dict[str, Any]
             Test configuration.
-        execution_timeout : float
-            Test execution timeout in seconds.
         """
         # Dump test configuration to string.
         test_config_str = json.dumps(test_config)
+        return [str(target_path), "--name", scenario_name, "--input", test_config_str]
 
+    @pytest.fixture(scope="class")
+    def results(
+        self,
+        command: list[str],
+        execution_timeout: float,
+        *args,
+        **kwargs,
+    ) -> ScenarioResult:
+        """
+        Execute test scenario executable and return results.
+
+        Parameters
+        ----------
+        command : list[str]
+            Command to invoke.
+        execution_timeout : float
+            Test execution timeout in seconds.
+        """
         # Run scenario.
         hang = False
 
-        command = [target_path, "--name", scenario_name, "--input", test_config_str]
         stderr_param = PIPE if self.capture_stderr() else None
         with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
             try:
