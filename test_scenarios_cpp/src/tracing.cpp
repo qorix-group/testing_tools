@@ -1,6 +1,7 @@
 #include "tracing.hpp"
 
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <thread>
 
@@ -9,6 +10,7 @@
 using namespace tracing;
 
 namespace {
+
 std::string minify_json(const std::string& input) {
     bool in_str = false;
     std::stringstream ss;
@@ -18,7 +20,7 @@ std::string minify_json(const std::string& input) {
             // Skip newlines.
         } else if (!in_str && (c == ' ' || c == '\t')) {
             // Skip whitespace outside of strings.
-        } else if (c == '"') {
+        } else if (c == '"' && (it == input.begin() || *(it - 1) != '\\')) {
             // Flip inside of string flag.
             in_str = !in_str;
             ss << c;
@@ -28,6 +30,9 @@ std::string minify_json(const std::string& input) {
     }
     return ss.str();
 }
+
+/// @brief Mutex for `stdout`, required to avoid message mangling.
+std::mutex stdout_mutex;
 
 }  // namespace
 
@@ -48,7 +53,7 @@ std::string tracing::level_to_string(const Level& level) {
     }
 }
 
-Subscriber::Subscriber(const Level& max_level, bool thread_ids)
+Subscriber::Subscriber(Level max_level, bool thread_ids)
     : max_level_{max_level}, thread_ids_{thread_ids} {}
 
 void Subscriber::handle_event(const std::optional<std::string>& target, const Level& level,
@@ -90,13 +95,22 @@ void Subscriber::handle_event(const std::optional<std::string>& target, const Le
     if (!buffer_result) {
         throw std::runtime_error{"Failed to stringify JSON"};
     }
-    std::cout << minify_json(*buffer_result) << std::endl;
+
+    // Minify JSON.
+    auto minified{minify_json(*buffer_result)};
+
+    // Print message within mutex lock scope.
+    {
+        std::lock_guard<std::mutex> lock{stdout_mutex};
+        std::cout << minified << std::endl;
+    }
 }
 
 const Subscriber& tracing::global_subscriber() {
     static std::unique_ptr<Subscriber> subscriber{nullptr};
     if (!subscriber) {
-        subscriber = std::make_unique<Subscriber>(Level::Trace, true);
+        const bool kThreadIds = true;
+        subscriber = std::make_unique<Subscriber>(Level::Trace, kThreadIds);
     }
     return *subscriber;
 }

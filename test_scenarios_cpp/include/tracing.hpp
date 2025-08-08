@@ -41,7 +41,7 @@ std::string level_to_string(const Level& level);
 
 class Subscriber {
    public:
-    Subscriber(const Level& max_level, bool thread_ids);
+    Subscriber(Level max_level, bool thread_ids);
 
     template <typename... T>
     void event(const std::optional<std::string>& target, const Level& level,

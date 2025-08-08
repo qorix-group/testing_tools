@@ -14,17 +14,18 @@ std::string join_name(const std::string& left, const std::string& right) {
     }
 }
 
-std::vector<std::string> list_scenarios_recursive(ScenarioGroup::Ptr group, std::string prefix) {
+std::vector<std::string> list_scenarios_recursive(ScenarioGroup::Ptr scenario_group,
+                                                  std::string prefix) {
     std::vector<std::string> names;
 
-    auto groups{group->groups()};
+    auto groups{scenario_group->groups()};
     for (auto&& group : groups) {
         auto new_prefix{join_name(prefix, group->name())};
         auto result{list_scenarios_recursive(group, new_prefix)};
         names.insert(names.end(), result.begin(), result.end());
     }
 
-    auto scenarios{group->scenarios()};
+    auto scenarios{scenario_group->scenarios()};
     for (auto&& scenario : scenarios) {
         auto scenario_name{join_name(prefix, scenario->name())};
         names.push_back(scenario_name);
