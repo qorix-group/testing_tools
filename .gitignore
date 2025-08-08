@@ -173,3 +173,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.vscode/
+bazel-bin
+bazel-out
+bazel-testing_tools
+bazel-testlogs
+MODULE.bazel.lock
