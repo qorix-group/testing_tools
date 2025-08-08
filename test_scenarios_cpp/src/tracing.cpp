@@ -1,7 +1,6 @@
 #include "tracing.hpp"
 
 #include <iostream>
-#include <mutex>
 #include <sstream>
 #include <thread>
 
@@ -30,9 +29,6 @@ std::string minify_json(const std::string& input) {
     }
     return ss.str();
 }
-
-/// @brief Mutex for `stdout`, required to avoid message mangling.
-std::mutex stdout_mutex;
 
 }  // namespace
 
@@ -96,14 +92,14 @@ void Subscriber::handle_event(const std::optional<std::string>& target, const Le
         throw std::runtime_error{"Failed to stringify JSON"};
     }
 
-    // Minify JSON.
-    auto minified{minify_json(*buffer_result)};
+    // Minify JSON and add "\n".
+    // "\n" + 'std::flush' is used instead of 'std::endl'.
+    // This is to avoid message mangling in multithreaded scenarios.
+    std::stringstream ss;
+    ss << minify_json(*buffer_result) << "\n";
 
-    // Print message within mutex lock scope.
-    {
-        std::lock_guard<std::mutex> lock{stdout_mutex};
-        std::cout << minified << std::endl;
-    }
+    // Print output.
+    std::cout << minified << std::flush;
 }
 
 const Subscriber& tracing::global_subscriber() {
