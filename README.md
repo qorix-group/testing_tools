@@ -4,12 +4,13 @@ Test framework tools and helpers for performance stack project.
 
 ## Overview
 
-This package provides utility classes and functions to assist with test automation, log handling, and result parsing.
-It is designed to be used as a helper library for test frameworks or custom test runners.
+This repository provided utilities to assist with test automation, log handling, and result parsing.
+It is designed to be a set of helper libraries for test frameworks or custom test runners.
 
 ## Features
 
-- **Cargo tools**: Utilities for interacting with Cargo.
+- **Test scenarios libraries**: Rust and C++ libraries for implementing test scenarios.
+- **Build tools**: Utilities for interacting with Bazel and Cargo.
 - **Log container**: A container for storing and querying logs.
 - **`ResultEntry`** and subclasses: Structured representation of test log entries.
 - **Scenario**: Utilities for defining and running test scenarios.
@@ -40,7 +41,17 @@ pip install -e .[dev] --config-settings editable_mode=strict
 
 ## Usage
 
-### Cargo tools
+### Test scenarios utilities
+
+Libraries should be included as a dependency in `Cargo.toml` (Rust) or `BUILD` (C++).
+
+Main components:
+
+- `TestContext` - responsible for listing and running scenarios.
+- `Scenario` and `ScenarioGroup` - base classes for defining scenarios and groups.
+- `run_cli_app` - runs CLI application based on provided arguments and test context.
+
+### Build tools
 
 #### Get Cargo metadata
 
@@ -54,17 +65,17 @@ from testing_utils import cargo_metadata
 metadata: dict[str, Any] = cargo_metadata()
 ```
 
-#### Find executable path
+#### Find target path
 
-Path is obtained from Cargo metadata.
-CWD must be set to Cargo project.
+Find path to executable based on provided target name.
 
 ```python
 from pathlib import Path
-from testing_utils import find_bin_path
+from testing_utils import BazelTools
 
-bin_name = "executable_name"
-bin_path: Path = find_bin_path(bin_name)
+target_name = "target_name"
+build_tools = BazelTools()
+target_path: Path = build_tools.find_target_path(target_name)
 ...
 ```
 
@@ -73,6 +84,7 @@ bin_path: Path = find_bin_path(bin_name)
 This feature is to ensure flexible usage in pytest context.
 Additional configuration is required.
 
+Expected flags depend on implementation, refer to `select_target_path` docs.
 Add options to `conftest.py`:
 
 ```python
@@ -80,15 +92,15 @@ from pathlib import Path
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--bin-path",
+        "--target-path",
         type=Path,
         help="Path to test scenarios executable. Search is performed by default.",
     )
     parser.addoption(
-        "--bin-name",
+        "--target-name",
         type=str,
         default="rust_test_scenarios",
-        help='Test scenario executable name. Overwritten by "--bin-path".',
+        help='Test scenario executable name. Overwritten by "--target-path".',
     )
 ```
 
@@ -97,23 +109,24 @@ Usage:
 ```python
 from pathlib import Path
 from pytest import FeatureRequest
-from testing_utils import select_bin_path
+from testing_utils import BazelTools
 
 def test_example(request: FeatureRequest) -> None:
-    bin_path: Path = select_bin_path(request.config)
+    build_tools = BazelTools()
+    target_path: Path = build_tools.select_target_path(request.config)
     ...
 ```
 
-#### Run Cargo build
+#### Run build
 
-Run build based on manifest located in CWD.
-CWD must be set to Cargo project.
+Run build for selected target.
 
 ```python
-from testing_utils import cargo_build
+from testing_utils import BazelTools
 
-bin_name = "rust_executable"
-bin_path: Path = cargo_build(bin_name)
+target_name = "target_name"
+build_tools = BazelTools()
+target_path: Path = build_tools.build(target_name)
 ...
 ```
 
@@ -169,15 +182,19 @@ Test execution results are provided using two fixtures:
 - `results` - executable run results
 - `logs` - logs from run
 
-`scenario_name` and `test_config` are marked as abstract and must be implemented.
+`build_tools`, `scenario_name` and `test_config` are marked as abstract and must be implemented.
 
 Example implementation:
 
 ```python
 import pytest
-from testing_utils import Scenario, ScenarioResult, LogContainer
+from testing_utils import Scenario, ScenarioResult, LogContainer, CargoTools, BuildTools
 
 class TestExample(Scenario):
+    @pytest.fixture(scope="class")
+    def build_tools(self) -> BuildTools:
+        return CargoTools()
+
     @pytest.fixture(scope="class")
     def scenario_name(self) -> str:
         return "example_scenario_name"
@@ -203,7 +220,7 @@ class TestExample(Scenario):
     ...
 ```
 
-Methods can be overrridden to utilize test-specific fixtures:
+Methods can be overridden to utilize test-specific fixtures:
 
 ```python
 import pytest
