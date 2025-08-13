@@ -99,7 +99,7 @@ void Subscriber::handle_event(const std::optional<std::string>& target, const Le
     ss << minify_json(*buffer_result) << "\n";
 
     // Print output.
-    std::cout << minified << std::flush;
+    std::cout << ss.str() << std::flush;
 }
 
 const Subscriber& tracing::global_subscriber() {
