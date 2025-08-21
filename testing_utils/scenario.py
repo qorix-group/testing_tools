@@ -5,6 +5,7 @@ Utilities for defining and running test scenarios.
 __all__ = ["ScenarioResult", "Scenario"]
 
 import json
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
@@ -101,12 +102,25 @@ class Scenario(ABC):
         return build_tools.select_target_path(request.config, expect_exists=True)
 
     @pytest.fixture(scope="class")
-    def command(self, target_path: Path | str, scenario_name: str, test_config: dict[str, Any]) -> list[str]:
+    def root_required(self, request: FixtureRequest) -> bool:
+        """
+        Return True if root permissions are required for the test.
+        This is handled by detection of 'root_required' marker.
+        """
+        return "root_required" in request.node.keywords
+
+    @pytest.fixture(scope="class")
+    def command(
+        self, root_required: bool, target_path: Path | str, scenario_name: str, test_config: dict[str, Any]
+    ) -> list[str]:
         """
         Command to invoke.
 
         Parameters
         ----------
+        root_required : bool
+            Root permissions are required.
+            Generated command starts with "sudo".
         target_path : Path | str
             Path to test scenarios executable.
         scenario_name : str
@@ -116,7 +130,14 @@ class Scenario(ABC):
         """
         # Dump test configuration to string.
         test_config_str = json.dumps(test_config)
-        return [str(target_path), "--name", scenario_name, "--input", test_config_str]
+
+        # Construct command.
+        root_user = os.getlogin() == "root"
+        cmd = ["sudo"] if root_required and not root_user else []
+        cmd += [str(target_path)]
+        cmd += ["--name", scenario_name]
+        cmd += ["--input", test_config_str]
+        return cmd
 
     @pytest.fixture(scope="class")
     def results(
