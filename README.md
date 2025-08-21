@@ -238,6 +238,21 @@ class TestExample(Scenario)
     ...
 ```
 
+Test scenarios are run with root permissions if `root_required` marker is set.
+This causes command to be prefixed with `sudo`:
+
+```python
+import pytest
+from testing_utils import Scenario
+
+@pytest.mark.root_required
+class TestExample(Scenario):
+    ...
+```
+
+> It is recommended to perform `sudo -v` before test execution to cache credentials.
+> This will prevent password prompt during execution.
+
 ## Development
 
 - Python 3.12+ required.
