@@ -34,6 +34,4 @@ options:
 `cargo modules structure --package orchestration | sed 's/\x1b\[[0-9;]*m//g' > input_report.txt` - sed is required to remove colored output  
 `python3 coverage_checker.py -r <older_orchestration_report> input_report.txt`  
 
-where <older_orchestration_report> can be found in this [discussion](https://github.com/qorix-group/inc_orchestrator_internal/discussions/212)
-
 Next, it should be checked manually in generated output if some uncovered/newly added functions in crate are now covered by tests with latest revision.
