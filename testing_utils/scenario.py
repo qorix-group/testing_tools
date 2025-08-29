@@ -40,11 +40,25 @@ class ScenarioResult:
             field_reprs.append(f"{name}={repr(value)}")
         return f"{class_name}({', '.join(field_reprs)})"
 
+    def is_successful(self) -> bool:
+        """
+        Check if the execution was successful.
+
+        Successful means zero return code and no hang.
+        """
+        return self.return_code == 0 and not self.hang
+
 
 class Scenario(ABC):
     """
     Base test scenario definition.
     """
+
+    # Capture or display stderr during execution.
+    capture_stderr: bool = False
+
+    # Whether command failure (non-zero return code or hang) is expected.
+    expect_command_failure: bool = False
 
     @pytest.fixture(scope="class")
     @abstractmethod
@@ -81,12 +95,6 @@ class Scenario(ABC):
         if isinstance(timeout, float):
             return timeout
         return 5.0
-
-    def capture_stderr(self, *args, **kwargs) -> bool:
-        """
-        Capture or display stderr during execution.
-        """
-        return False
 
     @pytest.fixture(scope="class")
     def target_path(self, build_tools: BuildTools, request: FixtureRequest) -> Path:
@@ -139,7 +147,7 @@ class Scenario(ABC):
         # Run scenario.
         hang = False
 
-        stderr_param = PIPE if self.capture_stderr() else None
+        stderr_param = PIPE if self.capture_stderr else None
         with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
             try:
                 stdout, stderr = p.communicate(timeout=execution_timeout)
@@ -173,6 +181,13 @@ class Scenario(ABC):
 
         # Sort messages into chronological order.
         messages.sort(key=lambda m: m["timestamp"])
+
+        result_success = results.is_successful()
+        if self.expect_command_failure and result_success:
+            raise RuntimeError(f"Command execution succeeded unexpectedly: {results=}")
+
+        if not self.expect_command_failure and not result_success:
+            raise RuntimeError(f"Command execution failed unexpectedly: {results=}")
 
         # Convert messages to list of ResultEntry and create log container.
         result_entries = [ResultEntry(msg) for msg in messages]
