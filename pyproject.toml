@@ -1,0 +1,22 @@
+[project]
+name = "testing-utils"
+version = "0.2.1"
+dependencies = ["pytest==8.4.1", "pytest-html==4.1.1", "pytest-repeat==0.9.4"]
+requires-python = ">=3.12"
+authors = [
+  { name = "Igor Ostrowski", email = "igor.ostrowski.ext@qorix.ai" },
+  { name = "Piotr Korkus", email = "piotr.korkus.ext@qorix.ai" },
+  { name = "Arkadiusz Jędrzejewski", email = "arkadiusz.jedrzejewski.ext@qorix.ai" },
+]
+description = "Test framework tools and helpers for performance stack project."
+readme = "README.md"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["testing_utils"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
