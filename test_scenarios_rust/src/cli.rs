@@ -45,7 +45,7 @@ struct CliArguments {
 /// Parse CLI arguments.
 ///
 /// * `raw_arguments` - Collected arguments from `std::env::args()`.
-fn parse_cli_arguments(raw_arguments: &[String]) -> CliArguments {
+fn parse_cli_arguments(raw_arguments: &[String]) -> Result<CliArguments, String> {
     let mut cli_arguments = CliArguments::default();
 
     // Process arguments.
@@ -57,14 +57,14 @@ fn parse_cli_arguments(raw_arguments: &[String]) -> CliArguments {
                 if let Some(value) = args_it.next() {
                     cli_arguments.scenario_arguments.name = Some(value.clone());
                 } else {
-                    panic!("Failed to read name parameter");
+                    return Err("Failed to read name parameter".to_string());
                 }
             }
             "-i" | "--input" => {
                 if let Some(value) = args_it.next() {
                     cli_arguments.scenario_arguments.input = Some(value.clone());
                 } else {
-                    panic!("Failed to read input parameter")
+                    return Err("Failed to read input parameter".to_string());
                 }
             }
             "-l" | "--list-scenarios" => {
@@ -74,12 +74,12 @@ fn parse_cli_arguments(raw_arguments: &[String]) -> CliArguments {
                 cli_arguments.help = true;
             }
             _ => {
-                panic!("Unknown argument provided");
+                return Err(format!("Unknown argument provided: {arg}"));
             }
         }
     }
 
-    cli_arguments
+    Ok(cli_arguments)
 }
 
 /// Runs CLI application based on provided arguments and test context.
@@ -98,11 +98,11 @@ fn parse_cli_arguments(raw_arguments: &[String]) -> CliArguments {
 /// let root_group = ScenarioGroupImpl::new("root", Vec::new(), Vec::new());
 /// let test_context = TestContext::new(Box::new(root_group));
 ///
-/// run_cli_app(&raw_arguments, &test_context);
+/// let result = run_cli_app(&raw_arguments, &test_context);
 /// ```
-pub fn run_cli_app(raw_arguments: &[String], test_context: &TestContext) {
+pub fn run_cli_app(raw_arguments: &[String], test_context: &TestContext) -> Result<(), String> {
     // Parse CLI arguments.
-    let cli_arguments = parse_cli_arguments(raw_arguments);
+    let cli_arguments = parse_cli_arguments(raw_arguments)?;
 
     // Show help and return.
     if cli_arguments.help {
@@ -111,7 +111,7 @@ pub fn run_cli_app(raw_arguments: &[String], test_context: &TestContext) {
         eprintln!("'-i', '--input' - test scenario input");
         eprintln!("'-l', '--list-scenarios' - list available scenarios");
         eprintln!("'-h', '--help' - show help");
-        return;
+        return Ok(());
     }
 
     // List scenarios and return.
@@ -120,23 +120,28 @@ pub fn run_cli_app(raw_arguments: &[String], test_context: &TestContext) {
         for scenario_name in scenario_names {
             println!("{scenario_name}");
         }
-        return;
+        return Ok(());
     }
 
     // Find scenario.
     let scenario = cli_arguments.scenario_arguments;
-    if scenario.name.is_none() || scenario.name.clone().is_some_and(|n| n.is_empty()) {
-        panic!("Test scenario name must be provided");
-    }
+    let scenario_name = match scenario.name {
+        Some(n) => {
+            if n.is_empty() {
+                return Err("Test scenario name must not be empty".to_string());
+            } else {
+                n
+            }
+        }
+        None => return Err("Test scenario name must be provided".to_string()),
+    };
 
     // Initialize tracing subscriber.
     TRACING_SUBSCRIBER_INIT.call_once(|| {
         init_tracing_subscriber();
     });
 
-    test_context
-        .run(scenario.name.unwrap().as_str(), scenario.input)
-        .unwrap();
+    test_context.run(&scenario_name, scenario.input)
 }
 
 #[cfg(test)]
@@ -178,7 +183,7 @@ mod tests {
     #[test]
     fn test_parse_cli_arguments_empty() {
         let raw_arguments = vec![];
-        let cli_arguments = parse_cli_arguments(&raw_arguments);
+        let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
         // Default values are expected.
         assert!(cli_arguments.scenario_arguments.name.is_none());
@@ -191,7 +196,7 @@ mod tests {
     fn test_parse_cli_arguments_executable_name_only() {
         let exe_name = "exe_name".to_string();
         let raw_arguments = vec![exe_name];
-        let cli_arguments = parse_cli_arguments(&raw_arguments);
+        let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
         // Default values are expected.
         assert!(cli_arguments.scenario_arguments.name.is_none());
@@ -206,7 +211,7 @@ mod tests {
         for arg in ["-n", "--name"] {
             let example_name = "example_name".to_string();
             let raw_arguments = vec![exe_name.clone(), arg.to_string(), example_name.clone()];
-            let cli_arguments = parse_cli_arguments(&raw_arguments);
+            let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
             assert!(cli_arguments
                 .scenario_arguments
@@ -219,11 +224,11 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read name parameter")]
     fn test_parse_cli_arguments_name_missing() {
         let exe_name = "exe_name".to_string();
         let raw_arguments = [exe_name, "--name".to_string()];
-        let _ = parse_cli_arguments(&raw_arguments);
+        let result = parse_cli_arguments(&raw_arguments);
+        assert!(result.is_err_and(|e| e == "Failed to read name parameter"))
     }
 
     #[test]
@@ -232,7 +237,7 @@ mod tests {
             let exe_name = "exe_name".to_string();
             let example_input = "example_input".to_string();
             let raw_arguments = [exe_name.clone(), arg.to_string(), example_input.clone()];
-            let cli_arguments = parse_cli_arguments(&raw_arguments);
+            let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
             assert!(cli_arguments.scenario_arguments.name.is_none());
             assert!(cli_arguments
@@ -245,11 +250,11 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read input parameter")]
     fn test_parse_cli_arguments_input_missing() {
         let exe_name = "exe_name".to_string();
         let raw_arguments = [exe_name, "--input".to_string()];
-        let _ = parse_cli_arguments(&raw_arguments);
+        let result = parse_cli_arguments(&raw_arguments);
+        assert!(result.is_err_and(|e| e == "Failed to read input parameter"))
     }
 
     #[test]
@@ -257,7 +262,7 @@ mod tests {
         let exe_name = "exe_name".to_string();
         for arg in ["-l", "--list-scenarios"] {
             let raw_arguments = [exe_name.clone(), arg.to_string()];
-            let cli_arguments = parse_cli_arguments(&raw_arguments);
+            let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
             assert!(cli_arguments.scenario_arguments.name.is_none());
             assert!(cli_arguments.scenario_arguments.input.is_none());
@@ -271,7 +276,7 @@ mod tests {
         let exe_name = "exe_name".to_string();
         for arg in ["-h", "--help"] {
             let raw_arguments = [exe_name.clone(), arg.to_string()];
-            let cli_arguments = parse_cli_arguments(&raw_arguments);
+            let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
             assert!(cli_arguments.scenario_arguments.name.is_none());
             assert!(cli_arguments.scenario_arguments.input.is_none());
@@ -281,11 +286,11 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Unknown argument provided")]
     fn test_parse_cli_arguments_unknown_argument() {
         let exe_name = "exe_name".to_string();
         let raw_arguments = [exe_name, "--invalid-arg".to_string()];
-        let _ = parse_cli_arguments(&raw_arguments);
+        let result = parse_cli_arguments(&raw_arguments);
+        assert!(result.is_err_and(|e| e == "Unknown argument provided: --invalid-arg"));
     }
 
     #[test]
@@ -302,7 +307,7 @@ mod tests {
             "--name".to_string(),
             example_name.clone(),
         ];
-        let cli_arguments = parse_cli_arguments(&raw_arguments);
+        let cli_arguments = parse_cli_arguments(&raw_arguments).unwrap();
 
         assert!(cli_arguments
             .scenario_arguments
@@ -323,7 +328,8 @@ mod tests {
         let root_group = ScenarioGroupImpl::new("root", vec![], vec![]);
         let test_context = TestContext::new(Box::new(root_group));
 
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_ok());
         // It's not possible to check stderr without unstable feature.
     }
 
@@ -334,7 +340,8 @@ mod tests {
         let root_group = ScenarioGroupImpl::new("root", vec![], vec![]);
         let test_context = TestContext::new(Box::new(root_group));
 
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_ok());
         // It's not possible to check stdout without unstable feature.
     }
 
@@ -353,11 +360,11 @@ mod tests {
         let root_group = ScenarioGroupImpl::new("root", vec![Box::new(scenario)], vec![]);
         let test_context = TestContext::new(Box::new(root_group));
 
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_ok());
     }
 
     #[test]
-    #[should_panic(expected = "Requested error")]
     fn test_run_cli_app_error() {
         let exe_name = "exe_name".to_string();
         let scenario_name = "example_scenario";
@@ -373,11 +380,11 @@ mod tests {
         let test_context = TestContext::new(Box::new(root_group));
 
         // It's expected that test will fail due to error from `ScenarioStub`, not from `run_cli_app`.
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_err_and(|e| e == "Requested error"));
     }
 
     #[test]
-    #[should_panic(expected = "Missing input")]
     fn test_run_cli_app_missing_input() {
         let exe_name = "exe_name".to_string();
         let scenario_name = "example_scenario";
@@ -387,11 +394,11 @@ mod tests {
         let test_context = TestContext::new(Box::new(root_group));
 
         // It's expected that test will fail due to error from `ScenarioStub`, not from `run_cli_app`.
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_err_and(|e| e == "Missing input"));
     }
 
     #[test]
-    #[should_panic(expected = "Test scenario name must be provided")]
     fn test_run_cli_app_missing_name() {
         let exe_name = "exe_name".to_string();
         let scenario_name = "example_scenario";
@@ -400,11 +407,24 @@ mod tests {
         let root_group = ScenarioGroupImpl::new("root", vec![Box::new(scenario)], vec![]);
         let test_context = TestContext::new(Box::new(root_group));
 
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_err_and(|e| e == "Test scenario name must be provided"));
     }
 
     #[test]
-    #[should_panic(expected = "Scenario invalid_scenario not found")]
+    fn test_run_cli_app_empty_name() {
+        let exe_name = "exe_name".to_string();
+        let scenario_name = "example_scenario";
+        let raw_arguments = vec![exe_name, "--name".to_string(), String::new()];
+        let scenario = ScenarioStub::new(scenario_name);
+        let root_group = ScenarioGroupImpl::new("root", vec![Box::new(scenario)], vec![]);
+        let test_context = TestContext::new(Box::new(root_group));
+
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_err_and(|e| e == "Test scenario name must not be empty"));
+    }
+
+    #[test]
     fn test_run_cli_app_invalid_name() {
         let exe_name = "exe_name".to_string();
         let scenario_name = "example_scenario";
@@ -418,6 +438,7 @@ mod tests {
         let test_context = TestContext::new(Box::new(root_group));
 
         // It's expected that test will fail due to error from `TestContext`, not from `run_cli_app`.
-        run_cli_app(&raw_arguments, &test_context);
+        let result = run_cli_app(&raw_arguments, &test_context);
+        assert!(result.is_err_and(|e| e == "Scenario invalid_scenario not found"));
     }
 }
