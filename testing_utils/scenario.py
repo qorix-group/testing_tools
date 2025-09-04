@@ -5,6 +5,7 @@ Utilities for defining and running test scenarios.
 __all__ = ["ScenarioResult", "Scenario"]
 
 import json
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
@@ -89,6 +90,13 @@ class Scenario(ABC):
         return False
 
     @pytest.fixture(scope="class")
+    def env_vars(self, *args, **kwargs) -> dict[str, str]:
+        """
+        Additional environment variables to be used by test scenario.
+        """
+        return {}
+
+    @pytest.fixture(scope="class")
     def target_path(self, build_tools: BuildTools, request: FixtureRequest) -> Path:
         """
         Return path to test scenario executable.
@@ -118,7 +126,9 @@ class Scenario(ABC):
         test_config_str = json.dumps(test_config)
         return [str(target_path), "--name", scenario_name, "--input", test_config_str]
 
-    def _run_command(self, command: list[str], execution_timeout: float, *args, **kwargs) -> ScenarioResult:
+    def _run_command(
+        self, command: list[str], execution_timeout: float, env_vars: dict[str, str] = {}, *args, **kwargs
+    ) -> ScenarioResult:
         """
         Execute test scenario executable.
 
@@ -131,7 +141,9 @@ class Scenario(ABC):
         """
         hang = False
         stderr_param = PIPE if self.capture_stderr() else None
-        with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
+        env = os.environ.copy()
+        env.update(env_vars)
+        with Popen(command, stdout=PIPE, stderr=stderr_param, text=True, env=env) as p:
             try:
                 stdout, stderr = p.communicate(timeout=execution_timeout)
             except TimeoutExpired:
@@ -146,6 +158,7 @@ class Scenario(ABC):
         self,
         command: list[str],
         execution_timeout: float,
+        env_vars: dict[str, str],
         *args,
         **kwargs,
     ) -> ScenarioResult:
@@ -159,7 +172,27 @@ class Scenario(ABC):
         execution_timeout : float
             Test execution timeout in seconds.
         """
-        return self._run_command(command, execution_timeout, args, kwargs)
+        extra_env = self._prepare_extra_env_vars(command, env_vars)
+        return self._run_command(command, execution_timeout, extra_env, args, kwargs)
+
+    def _prepare_extra_env_vars(self, command: list[str], env: dict[str, str]) -> dict[str, str]:
+        """
+        Prepare extra environment variables for test scenario execution based on command.
+
+        Parameters
+        ----------
+        command : list[str]
+            Command to invoke.
+        env : dict[str, str]
+            User defined environment variables.
+        """
+        extra_env = env.copy()
+        # Enable Rust backtrace if running a Rust test scenario.
+        # Don't override if already set by the user.
+        if "rust" in command[0].lower() and "RUST_BACKTRACE" not in os.environ:
+            extra_env |= {"RUST_BACKTRACE": "1"}
+
+        return extra_env
 
     @pytest.fixture(scope="class")
     def logs(self, results: ScenarioResult, *args, **kwargs) -> LogContainer:
