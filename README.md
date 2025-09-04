@@ -214,17 +214,8 @@ To capture `stderr` use:
 
 ```python
 class TestExample(Scenario):
-    capture_stderr = True
-
-    ...
-```
-
-Execution command is checked against non-zero return code or a hang.
-To expect such conditions and handle them in the test use:
-
-```python
-class TestExample(Scenario):
-    expect_command_failure = True
+    def capture_stderr(self) -> bool:
+        return True
 
     ...
 ```
