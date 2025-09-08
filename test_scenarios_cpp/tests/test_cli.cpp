@@ -213,6 +213,20 @@ TEST(run_cli_app, missing_name) {
                     "Test scenario name must be provided");
 }
 
+TEST(run_cli_app, empty_name) {
+    std::string exe_name{"exe_name"};
+    std::string scenario_name{"example_scenario"};
+    std::vector<std::string> raw_arguments{exe_name, "--name", ""};
+    Scenario::Ptr scenario{new ScenarioStub{scenario_name}};
+    std::vector<Scenario::Ptr> scenarios{scenario};
+    std::vector<ScenarioGroup::Ptr> groups;
+    ScenarioGroup::Ptr root_group{new ScenarioGroupImpl{"root", scenarios, groups}};
+    TestContext test_context{root_group};
+
+    SHOULD_THROW_RE(run_cli_app(raw_arguments, test_context),
+                    "Test scenario name must not be empty");
+}
+
 TEST(run_cli_app, invalid_name) {
     std::string exe_name{"exe_name"};
     std::string scenario_name{"example_scenario"};

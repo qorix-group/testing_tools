@@ -63,8 +63,10 @@ void run_cli_app(const std::vector<std::string>& raw_arguments, const TestContex
 
     // Find scenario.
     auto scenario{cli_arguments.scenario_arguments};
-    if (!scenario.name.has_value() || (scenario.name.has_value() && scenario.name->empty())) {
+    if (!scenario.name.has_value()) {
         throw std::runtime_error{"Test scenario name must be provided"};
+    } else if (scenario.name.has_value() && scenario.name->empty()) {
+        throw std::runtime_error{"Test scenario name must not be empty"};
     }
 
     test_context.run(*scenario.name, scenario.input);
