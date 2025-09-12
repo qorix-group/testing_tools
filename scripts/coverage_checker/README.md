@@ -29,7 +29,6 @@ options:
 
 ## Example usage
 
-`tabs 4` - required to display correctly tabs  
 `cd <inc_orchestrator_repo>`  
 `cargo modules structure --package orchestration | sed 's/\x1b\[[0-9;]*m//g' > input_report.txt` - sed is required to remove colored output  
 `python3 coverage_checker.py -r <older_orchestration_report> input_report.txt`  
