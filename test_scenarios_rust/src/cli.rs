@@ -136,12 +136,18 @@ pub fn run_cli_app(raw_arguments: &[String], test_context: &TestContext) -> Resu
         None => return Err("Test scenario name must be provided".to_string()),
     };
 
+    // Check input is provided.
+    let scenario_input = match scenario.input {
+        Some(input) => input,
+        None => return Err("Test scenario input must be provided".to_string()),
+    };
+
     // Initialize tracing subscriber.
     TRACING_SUBSCRIBER_INIT.call_once(|| {
         init_tracing_subscriber();
     });
 
-    test_context.run(&scenario_name, scenario.input)
+    test_context.run(&scenario_name, &scenario_input)
 }
 
 #[cfg(test)]
@@ -167,15 +173,11 @@ mod tests {
             &self.name
         }
 
-        fn run(&self, input: Option<String>) -> Result<(), String> {
-            if let Some(input) = input {
-                match input.as_str() {
-                    "ok" => Ok(()),
-                    "error" => Err("Requested error".to_string()),
-                    _ => Err("Unknown value".to_string()),
-                }
-            } else {
-                Err("Missing input".to_string())
+        fn run(&self, input: &str) -> Result<(), String> {
+            match input {
+                "ok" => Ok(()),
+                "error" => Err("Requested error".to_string()),
+                _ => Err("Unknown value".to_string()),
             }
         }
     }
@@ -395,7 +397,7 @@ mod tests {
 
         // It's expected that test will fail due to error from `ScenarioStub`, not from `run_cli_app`.
         let result = run_cli_app(&raw_arguments, &test_context);
-        assert!(result.is_err_and(|e| e == "Missing input"));
+        assert!(result.is_err_and(|e| e == "Test scenario input must be provided"));
     }
 
     #[test]
@@ -432,6 +434,8 @@ mod tests {
             exe_name,
             "--name".to_string(),
             "invalid_scenario".to_string(),
+            "--input".to_string(),
+            "".to_string(),
         ];
         let scenario = ScenarioStub::new(scenario_name);
         let root_group = ScenarioGroupImpl::new("root", vec![Box::new(scenario)], vec![]);

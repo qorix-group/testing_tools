@@ -16,7 +16,7 @@ class TestContext {
     /// @brief Run test scenario.
     /// @param name Test scenario name.
     /// @param input Test scenario input.
-    void run(const std::string& name, const std::optional<std::string>& input) const;
+    void run(const std::string& name, const std::string& input) const;
 
     /// @brief List available scenarios.
     /// @return Names of available scenarios.

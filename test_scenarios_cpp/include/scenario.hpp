@@ -17,9 +17,9 @@ class Scenario {
     /// @return Scenario name.
     virtual std::string name() const = 0;
 
-    /// @brief Runt test scenario.
-    /// @param input Optional test input.
-    virtual void run(const std::optional<std::string>& input) const = 0;
+    /// @brief Run test scenario.
+    /// @param input Test scenario input.
+    virtual void run(const std::string& input) const = 0;
 };
 
 /// @brief Scenario group definition.

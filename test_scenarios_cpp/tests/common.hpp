@@ -30,17 +30,13 @@ class ScenarioStub : public Scenario {
 
     std::string name() const override { return name_; }
 
-    void run(const std::optional<std::string>& input) const override {
-        if (input.has_value()) {
-            if (input == "ok") {
-                return;
-            } else if (input == "error") {
-                throw std::runtime_error{"Requested error"};
-            } else {
-                throw std::runtime_error{"Unknown value"};
-            }
+    void run(const std::string& input) const override {
+        if (input == "ok") {
+            return;
+        } else if (input == "error") {
+            throw std::runtime_error{"Requested error"};
         } else {
-            throw std::runtime_error{"Missing input"};
+            throw std::runtime_error{"Unknown value"};
         }
     }
 

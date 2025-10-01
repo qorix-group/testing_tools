@@ -69,5 +69,10 @@ void run_cli_app(const std::vector<std::string>& raw_arguments, const TestContex
         throw std::runtime_error{"Test scenario name must not be empty"};
     }
 
-    test_context.run(*scenario.name, scenario.input);
+    // Check input is provided.
+    if (!scenario.input.has_value()) {
+        throw std::runtime_error{"Test scenario input must be provided"};
+    }
+
+    test_context.run(*scenario.name, *scenario.input);
 }
