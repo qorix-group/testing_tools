@@ -17,6 +17,9 @@ class _NotSet:
     Internal type for representing values not set.
     """
 
+    def __repr__(self) -> str:
+        return "<NOT_SET>"
+
 
 _not_set = _NotSet()
 
@@ -250,7 +253,7 @@ class LogContainer:
         if len(findings) == 1:
             return findings[0]
         if len(findings) > 1:
-            raise ValueError(f"Multiple logs found for {field=} and {pattern=}")
+            raise ValueError(f"Multiple logs found for {field=} with {pattern=} and {value=}")
 
         return None
 
