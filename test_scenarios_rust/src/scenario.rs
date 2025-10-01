@@ -6,7 +6,7 @@ pub trait Scenario {
     /// Run test scenario.
     ///
     /// * `input` - Test scenario input.
-    fn run(&self, input: Option<String>) -> Result<(), String>;
+    fn run(&self, input: &str) -> Result<(), String>;
 }
 
 /// Scenario group definition.
@@ -98,7 +98,7 @@ mod tests {
             &self.name
         }
 
-        fn run(&self, _input: Option<String>) -> Result<(), String> {
+        fn run(&self, _input: &str) -> Result<(), String> {
             Ok(())
         }
     }

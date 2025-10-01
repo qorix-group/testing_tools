@@ -24,28 +24,22 @@ ScenarioGroup::Ptr init_group() {
 
 }  // namespace
 
-TEST(test_context, run_none_input_err) {
-    auto root_group{init_group()};
-    TestContext context{root_group};
-    SHOULD_THROW_RE(context.run("inner_group.inner_scenario", {}), "Missing input");
-}
-
 TEST(test_context, run_some_input_ok) {
     auto root_group{init_group()};
     TestContext context{root_group};
-    context.run("inner_group.inner_scenario", {"ok"});
+    context.run("inner_group.inner_scenario", "ok");
 }
 
 TEST(test_context, run_some_input_err) {
     auto root_group{init_group()};
     TestContext context{root_group};
-    SHOULD_THROW_RE(context.run("inner_group.inner_scenario", {"error"}), "Requested error");
+    SHOULD_THROW_RE(context.run("inner_group.inner_scenario", "error"), "Requested error");
 }
 
 TEST(test_context, run_not_found) {
     auto root_group{init_group()};
     TestContext context{root_group};
-    SHOULD_THROW_RE(context.run("some_scenario", {}), "Scenario some_scenario not found");
+    SHOULD_THROW_RE(context.run("some_scenario", ""), "Scenario some_scenario not found");
 }
 
 TEST(test_context, list_scenarios_ok) {
