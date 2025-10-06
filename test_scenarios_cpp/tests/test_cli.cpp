@@ -1,3 +1,15 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -195,8 +207,8 @@ TEST(run_cli_app, missing_input) {
     ScenarioGroup::Ptr root_group{new ScenarioGroupImpl{"root", scenarios, groups}};
     TestContext test_context{root_group};
 
-    // It's expected that test will fail due to error from `ScenarioStub`, not from `run_cli_app`.
-    SHOULD_THROW_RE(run_cli_app(raw_arguments, test_context), "Missing input");
+    SHOULD_THROW_RE(run_cli_app(raw_arguments, test_context),
+                    "Test scenario input must be provided");
 }
 
 TEST(run_cli_app, missing_name) {
@@ -213,10 +225,24 @@ TEST(run_cli_app, missing_name) {
                     "Test scenario name must be provided");
 }
 
+TEST(run_cli_app, empty_name) {
+    std::string exe_name{"exe_name"};
+    std::string scenario_name{"example_scenario"};
+    std::vector<std::string> raw_arguments{exe_name, "--name", ""};
+    Scenario::Ptr scenario{new ScenarioStub{scenario_name}};
+    std::vector<Scenario::Ptr> scenarios{scenario};
+    std::vector<ScenarioGroup::Ptr> groups;
+    ScenarioGroup::Ptr root_group{new ScenarioGroupImpl{"root", scenarios, groups}};
+    TestContext test_context{root_group};
+
+    SHOULD_THROW_RE(run_cli_app(raw_arguments, test_context),
+                    "Test scenario name must not be empty");
+}
+
 TEST(run_cli_app, invalid_name) {
     std::string exe_name{"exe_name"};
     std::string scenario_name{"example_scenario"};
-    std::vector<std::string> raw_arguments{exe_name, "--name", "invalid_scenario"};
+    std::vector<std::string> raw_arguments{exe_name, "--name", "invalid_scenario", "--input", ""};
     Scenario::Ptr scenario{new ScenarioStub{scenario_name}};
     std::vector<Scenario::Ptr> scenarios{scenario};
     std::vector<ScenarioGroup::Ptr> groups;

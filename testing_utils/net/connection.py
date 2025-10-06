@@ -10,19 +10,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
-load("@test_scenarios_rust_crates//:defs.bzl", "all_crate_deps")
-
-rust_library(
-    name = "test_scenarios_rust",
-    srcs = glob(["src/**/*.rs"]),
-    visibility = ["//visibility:public"],
-    deps = all_crate_deps(normal = True),
+from socket import (
+    SOCK_STREAM,
+    socket,
 )
 
-rust_test(
-    name = "tests",
-    crate = ":test_scenarios_rust",
-    visibility = ["//visibility:private"],
-    deps = all_crate_deps(normal = True),
-)
+from .address import Address
+
+
+def create_connection(address: Address, timeout: float | None = 3.0) -> socket:
+    """
+    Create a socket connected to the server.
+
+    Parameters
+    ----------
+    address : Address
+        Address to connect to.
+    timeout : float | None
+        Connection timeout in seconds. 0 for non-blocking mode, None for blocking mode.
+    """
+    s = socket(address.family(), SOCK_STREAM)
+    s.settimeout(timeout)
+    s.connect(address.to_raw())
+    return s

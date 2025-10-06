@@ -1,3 +1,15 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
 #include "test_context.hpp"
 
 #include <sstream>
@@ -37,7 +49,7 @@ std::vector<std::string> list_scenarios_recursive(ScenarioGroup::Ptr scenario_gr
 
 TestContext::TestContext(ScenarioGroup::Ptr root_group) : root_group_{root_group} {}
 
-void TestContext::run(const std::string& name, const std::optional<std::string>& input) const {
+void TestContext::run(const std::string& name, const std::string& input) const {
     auto scenario{root_group_->find_scenario(name)};
     if (!scenario.has_value()) {
         std::stringstream ss;

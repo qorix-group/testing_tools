@@ -1,3 +1,15 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
 #include "cli.hpp"
 
 #include <filesystem>
@@ -63,9 +75,16 @@ void run_cli_app(const std::vector<std::string>& raw_arguments, const TestContex
 
     // Find scenario.
     auto scenario{cli_arguments.scenario_arguments};
-    if (!scenario.name.has_value() || (scenario.name.has_value() && scenario.name->empty())) {
+    if (!scenario.name.has_value()) {
         throw std::runtime_error{"Test scenario name must be provided"};
+    } else if (scenario.name.has_value() && scenario.name->empty()) {
+        throw std::runtime_error{"Test scenario name must not be empty"};
     }
 
-    test_context.run(*scenario.name, scenario.input);
+    // Check input is provided.
+    if (!scenario.input.has_value()) {
+        throw std::runtime_error{"Test scenario input must be provided"};
+    }
+
+    test_context.run(*scenario.name, *scenario.input);
 }

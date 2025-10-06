@@ -1,3 +1,15 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
 """
 Utilities for defining and running test scenarios.
 """
@@ -40,25 +52,11 @@ class ScenarioResult:
             field_reprs.append(f"{name}={repr(value)}")
         return f"{class_name}({', '.join(field_reprs)})"
 
-    def is_successful(self) -> bool:
-        """
-        Check if the execution was successful.
-
-        Successful means zero return code and no hang.
-        """
-        return self.return_code == 0 and not self.hang
-
 
 class Scenario(ABC):
     """
     Base test scenario definition.
     """
-
-    # Capture or display stderr during execution.
-    capture_stderr: bool = False
-
-    # Whether command failure (non-zero return code or hang) is expected.
-    expect_command_failure: bool = False
 
     @pytest.fixture(scope="class")
     @abstractmethod
@@ -96,6 +94,12 @@ class Scenario(ABC):
             return timeout
         return 5.0
 
+    def capture_stderr(self, *args, **kwargs) -> bool:
+        """
+        Capture or display stderr during execution.
+        """
+        return False
+
     @pytest.fixture(scope="class")
     def target_path(self, build_tools: BuildTools, request: FixtureRequest) -> Path:
         """
@@ -126,6 +130,29 @@ class Scenario(ABC):
         test_config_str = json.dumps(test_config)
         return [str(target_path), "--name", scenario_name, "--input", test_config_str]
 
+    def _run_command(self, command: list[str], execution_timeout: float, *args, **kwargs) -> ScenarioResult:
+        """
+        Execute test scenario executable.
+
+        Parameters
+        ----------
+        command : list[str]
+            Command to invoke.
+        execution_timeout : float
+            Test execution timeout in seconds.
+        """
+        hang = False
+        stderr_param = PIPE if self.capture_stderr() else None
+        with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
+            try:
+                stdout, stderr = p.communicate(timeout=execution_timeout)
+            except TimeoutExpired:
+                hang = True
+                p.kill()
+                stdout, stderr = p.communicate()
+
+        return ScenarioResult(stdout, stderr, p.returncode, hang)
+
     @pytest.fixture(scope="class")
     def results(
         self,
@@ -144,19 +171,7 @@ class Scenario(ABC):
         execution_timeout : float
             Test execution timeout in seconds.
         """
-        # Run scenario.
-        hang = False
-
-        stderr_param = PIPE if self.capture_stderr else None
-        with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
-            try:
-                stdout, stderr = p.communicate(timeout=execution_timeout)
-            except TimeoutExpired:
-                hang = True
-                p.kill()
-                stdout, stderr = p.communicate()
-
-        return ScenarioResult(stdout, stderr, p.returncode, hang)
+        return self._run_command(command, execution_timeout, args, kwargs)
 
     @pytest.fixture(scope="class")
     def logs(self, results: ScenarioResult, *args, **kwargs) -> LogContainer:
@@ -181,13 +196,6 @@ class Scenario(ABC):
 
         # Sort messages into chronological order.
         messages.sort(key=lambda m: m["timestamp"])
-
-        result_success = results.is_successful()
-        if self.expect_command_failure and result_success:
-            raise RuntimeError(f"Command execution succeeded unexpectedly: {results=}")
-
-        if not self.expect_command_failure and not result_success:
-            raise RuntimeError(f"Command execution failed unexpectedly: {results=}")
 
         # Convert messages to list of ResultEntry and create log container.
         result_entries = [ResultEntry(msg) for msg in messages]

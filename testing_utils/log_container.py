@@ -1,3 +1,15 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
 """
 A container for storing and querying logs.
 """
@@ -16,6 +28,9 @@ class _NotSet:
     """
     Internal type for representing values not set.
     """
+
+    def __repr__(self) -> str:
+        return "<NOT_SET>"
 
 
 _not_set = _NotSet()
@@ -61,6 +76,29 @@ class LogContainer:
         Get the log by index.
         """
         return self._logs[subscript]
+
+    def _logs_by_field_field_only(self, field: str, reverse: bool) -> list[ResultEntry]:
+        """
+        Filter logs using field only.
+
+        Parameters
+        ----------
+        field : str
+            Name of the field to match.
+        reverse : bool
+            Return logs not matched.
+        """
+        logs = []
+        for log in self._logs:
+            found_value = getattr(log, field, _not_set)
+            if isinstance(found_value, _NotSet):
+                if reverse:
+                    logs.append(log)
+                continue
+
+            if not reverse:
+                logs.append(log)
+        return logs
 
     def _logs_by_field_regex_match(self, field: str, reverse: bool, pattern: str) -> list[ResultEntry]:
         """
@@ -150,10 +188,10 @@ class LogContainer:
             return self._logs_by_field_regex_match(field, reverse, pattern)
         elif not pattern_set and value_set:
             return self._logs_by_field_exact_match(field, reverse, value)
-        elif pattern_set and value_set:
-            raise RuntimeError("Pattern and value parameters are mutually exclusive")
+        elif not pattern_set and not value_set:
+            return self._logs_by_field_field_only(field, reverse)
         else:
-            raise RuntimeError("Either pattern or value parameters must be set")
+            raise RuntimeError("Pattern and value parameters are mutually exclusive")
 
     def contains_log(self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set) -> bool:
         """
@@ -173,16 +211,20 @@ class LogContainer:
         """
         return len(self._logs_by_field(field, reverse=False, pattern=pattern, value=value)) > 0
 
-    def get_logs_by_field(
-        self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
+    def get_logs(
+        self, field: str | _NotSet = _not_set, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set
     ) -> "LogContainer":
         """
         Get all logs matching the given field and pattern or value.
+        - All logs are returned when no parameters are provided.
+        - Only logs containing `field` are returned when provided.
+        - Logs matching `field` and `pattern` or `value` are returned when provided.
 
         Parameters
         ----------
-        field : str
+        field : str | _NotSet
             Name of the field to match.
+            All logs are returned if not set.
         pattern : str | _NotSet
             Regex pattern to match.
             Underlying field value is casted to str.
@@ -191,6 +233,12 @@ class LogContainer:
             Exact value to match.
             Mutually exclusive with "pattern".
         """
+        # Return copy of all logs.
+        if isinstance(field, _NotSet):
+            if not isinstance(pattern, _NotSet) or not isinstance(value, _NotSet):
+                raise RuntimeError("Matching by pattern or value without field is not supported")
+            return LogContainer(self._logs[:])
+
         return LogContainer(self._logs_by_field(field, reverse=False, pattern=pattern, value=value))
 
     def find_log(
@@ -217,7 +265,7 @@ class LogContainer:
         if len(findings) == 1:
             return findings[0]
         if len(findings) > 1:
-            raise ValueError(f"Multiple logs found for {field=} and {pattern=}")
+            raise ValueError(f"Multiple logs found for {field=} with {pattern=} and {value=}")
 
         return None
 
@@ -236,12 +284,6 @@ class LogContainer:
             self._logs.extend(log)
         else:
             raise TypeError("log must be a ResultEntry or list[ResultEntry]")
-
-    def get_logs(self) -> list[ResultEntry]:
-        """
-        Get all logs.
-        """
-        return self._logs[:]
 
     def remove_logs(
         self, field: str, *, pattern: str | _NotSet = _not_set, value: Any | _NotSet = _not_set

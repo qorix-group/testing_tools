@@ -1,3 +1,15 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
 """
 Tests for "log_container" module.
 """
@@ -32,13 +44,13 @@ class TestInit:
         # Make sure internal storage is always list.
         lc = LogContainer()
         assert len(lc) == 0
-        assert isinstance(lc.get_logs(), list)
+        assert isinstance(lc._logs, list)
 
     def test_explicit_none(self):
         # Make sure internal storage is always list.
         lc = LogContainer(None)
         assert len(lc) == 0
-        assert isinstance(lc.get_logs(), list)
+        assert isinstance(lc._logs, list)
 
     def test_default_param_not_referenced(self):
         lc1 = LogContainer()
@@ -46,8 +58,8 @@ class TestInit:
         lc2 = LogContainer()
         lc2.add_log(ResultEntry({}))
 
-        assert len(lc1.get_logs()) == 1
-        assert len(lc2.get_logs()) == 1
+        assert len(lc1) == 1
+        assert len(lc2) == 1
 
     def test_param_copied_not_referenced(self):
         logs1 = [ResultEntry({})]
@@ -57,8 +69,8 @@ class TestInit:
         lc2.add_log(ResultEntry({}))
 
         assert len(logs1) == 1
-        assert len(lc1.get_logs()) == 2
-        assert len(lc2.get_logs()) == 1
+        assert len(lc1) == 2
+        assert len(lc2) == 1
 
 
 class TestIterNext:
@@ -66,14 +78,26 @@ class TestIterNext:
     Tests for `__iter__` and `__next__`.
     """
 
-    def test_ok(self, lc_basic: LogContainer):
-        for i, log in enumerate(lc_basic):
+    def test_iterator_ok(self, lc_basic: LogContainer):
+        i = 0
+        for log in lc_basic:
             assert log.index == i
+            i += 1
 
-    def test_empty(self):
+    def test_iterator_empty(self):
         lc = LogContainer()
         for _ in lc:
             assert False, "Statement shouldn't be reached"
+
+    def test_list_ok(self, lc_basic: LogContainer):
+        logs = list(lc_basic)
+        assert len(logs) == 10
+        assert all(log.index == i for i, log in enumerate(logs))
+
+    def test_list_empty(self):
+        lc = LogContainer()
+        logs = list(lc)
+        assert len(logs) == 0
 
 
 class TestLen:
@@ -117,10 +141,27 @@ class TestContainsLog:
         with pytest.raises(RuntimeError):
             _ = lc.contains_log("level", pattern="pattern", value="value")
 
-    def test_neither_pattern_nor_value(self):
+    def test_field_ok(self):
         lc = LogContainer()
-        with pytest.raises(RuntimeError):
-            _ = lc.contains_log("level")
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+            ]
+        )
+        assert lc.contains_log("level")
+
+    def test_field_not_found(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+            ]
+        )
+        assert not lc.contains_log("invalid")
 
     def test_pattern_str_ok(self):
         lc = LogContainer()
@@ -273,20 +314,78 @@ class TestContainsLog:
         assert not lc.contains_log("some_id", value=10)
 
 
-class TestGetLogsByField:
+class TestGetLogs:
     """
-    Tests for `get_logs_by_field`.
+    Tests for `get_logs`.
     """
 
     def test_both_pattern_and_value(self):
         lc = LogContainer()
         with pytest.raises(RuntimeError):
-            _ = lc.get_logs_by_field("level", pattern="pattern", value="value")
+            _ = lc.get_logs("level", pattern="pattern", value="value")
 
-    def test_neither_pattern_nor_value(self):
+    def test_no_params_ok(self):
         lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+                ResultEntry({"flag": False}),
+            ]
+        )
+        logs = lc.get_logs()
+        assert len(logs) == 4
+
+    def test_no_field_value_set(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+            ]
+        )
         with pytest.raises(RuntimeError):
-            _ = lc.get_logs_by_field("level")
+            _ = lc.get_logs(value="WARN")
+
+    def test_no_field_pattern_set(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+            ]
+        )
+        with pytest.raises(RuntimeError):
+            _ = lc.get_logs(pattern=r"WARN|INFO")
+
+    def test_field_ok(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+                ResultEntry({"flag": False}),
+            ]
+        )
+        logs = lc.get_logs("level")
+        assert len(logs) == 3
+
+    def test_field_not_found(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+                ResultEntry({"flag": False}),
+            ]
+        )
+        logs = lc.get_logs("invalid")
+        assert len(logs) == 0
 
     def test_pattern_str_ok(self):
         lc = LogContainer()
@@ -297,7 +396,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("level", pattern=r"WARN|INFO")
+        logs = lc.get_logs("level", pattern=r"WARN|INFO")
         assert len(logs) == 2
         assert logs[0].level == "INFO"
         assert logs[1].level == "WARN"
@@ -315,7 +414,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 12}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", pattern=r"^1$")
+        logs = lc.get_logs("some_id", pattern=r"^1$")
         assert len(logs) == 3
         assert all(log.some_id == 1 for log in logs)
 
@@ -330,12 +429,12 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG", "someId": 100}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", pattern="^0$")
+        logs = lc.get_logs("some_id", pattern="^0$")
         assert len(logs) == 2
         assert logs[0].some_id == "0"
         assert logs[1].some_id == 0
 
-        logs = lc.get_logs_by_field("some_id", pattern="0")
+        logs = lc.get_logs("some_id", pattern="0")
         assert len(logs) == 4
         assert logs[0].some_id == "0"
         assert logs[1].some_id == 0
@@ -351,7 +450,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("invalid", pattern="WARN")
+        logs = lc.get_logs("invalid", pattern="WARN")
         assert len(logs) == 0
 
     def test_pattern_invalid_value(self):
@@ -363,7 +462,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("level", pattern="invalid")
+        logs = lc.get_logs("level", pattern="invalid")
         assert len(logs) == 0
 
     def test_value_str_ok(self):
@@ -375,7 +474,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("level", value="INFO")
+        logs = lc.get_logs("level", value="INFO")
         assert len(logs) == 1
         assert logs[0].level == "INFO"
 
@@ -392,7 +491,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 12}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", value=1)
+        logs = lc.get_logs("some_id", value=1)
         assert len(logs) == 3
         assert all(log.some_id == 1 for log in logs)
 
@@ -407,7 +506,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "INFO", "someId": 1}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", value=None)
+        logs = lc.get_logs("some_id", value=None)
         assert len(logs) == 1
         assert logs[0].some_id is None
 
@@ -422,11 +521,11 @@ class TestGetLogsByField:
                 ResultEntry({"level": "DEBUG", "someId": 100}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", value="0")
+        logs = lc.get_logs("some_id", value="0")
         assert len(logs) == 1
         assert logs[0].some_id == "0"
 
-        logs = lc.get_logs_by_field("some_id", value=0)
+        logs = lc.get_logs("some_id", value=0)
         assert len(logs) == 1
         assert logs[0].some_id == 0
 
@@ -439,7 +538,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("invalid", value="WARN")
+        logs = lc.get_logs("invalid", value="WARN")
         assert len(logs) == 0
 
     def test_value_invalid_str_value(self):
@@ -451,7 +550,7 @@ class TestGetLogsByField:
                 ResultEntry({"level": "WARN"}),
             ]
         )
-        logs = lc.get_logs_by_field("level", value="invalid")
+        logs = lc.get_logs("level", value="invalid")
         assert len(logs) == 0
 
     def test_value_invalid_int_value(self):
@@ -465,7 +564,7 @@ class TestGetLogsByField:
                 ResultEntry({"someId": 1}),
             ]
         )
-        logs = lc.get_logs_by_field("some_id", value=10)
+        logs = lc.get_logs("some_id", value=10)
         assert len(logs) == 0
 
 
@@ -479,10 +578,18 @@ class TestFindLog:
         with pytest.raises(RuntimeError):
             _ = lc.find_log("level", pattern="pattern", value="value")
 
-    def test_neither_pattern_nor_value(self):
+    def test_field_ok(self):
         lc = LogContainer()
-        with pytest.raises(RuntimeError):
-            _ = lc.find_log("level")
+        lc.add_log([ResultEntry({"level": "DEBUG"}), ResultEntry({"level": "INFO"}), ResultEntry({"flag": True})])
+        log = lc.find_log("flag")
+        assert log
+        assert log.flag
+
+    def test_field_not_found(self):
+        lc = LogContainer()
+        lc.add_log([ResultEntry({"level": "DEBUG"}), ResultEntry({"level": "INFO"}), ResultEntry({"flag": True})])
+        log = lc.find_log("invalid")
+        assert log is None
 
     def test_pattern_str_ok(self):
         lc = LogContainer()
@@ -684,7 +791,7 @@ class TestAddLog:
         ]
 
     def _common_check(self, lc: LogContainer) -> None:
-        logs = lc.get_logs()
+        logs = list(lc)
         assert len(logs) == 2
 
         assert logs[0].timestamp == str(timedelta(microseconds=1000100))
@@ -710,7 +817,7 @@ class TestAddLog:
         lc.add_log(ResultEntry({}))
 
         assert len(logs) == 1
-        assert len(lc.get_logs()) == 2
+        assert len(lc) == 2
 
     def test_many_ok(self):
         lc = LogContainer()
@@ -725,29 +832,13 @@ class TestAddLog:
 
         assert len(logs1) == 2
         assert len(logs2) == 3
-        assert len(lc.get_logs()) == 5
+        assert len(lc) == 5
 
     @pytest.mark.parametrize("value", ["raw_string", None, 123, False])
     def test_invalid_type(self, value: Any):
         lc = LogContainer()
         with pytest.raises(TypeError):
             lc.add_log(value)  # type: ignore
-
-
-class TestGetLogs:
-    """
-    Tests for `get_logs`.
-    """
-
-    def test_ok(self, lc_basic: LogContainer):
-        logs = lc_basic.get_logs()
-        assert len(logs) == 10
-        assert all(log.index == i for i, log in enumerate(logs))
-
-    def test_empty(self):
-        lc = LogContainer()
-        logs = lc.get_logs()
-        assert len(logs) == 0
 
 
 class TestRemoveLogs:
@@ -760,10 +851,32 @@ class TestRemoveLogs:
         with pytest.raises(RuntimeError):
             _ = lc.remove_logs("level", pattern="pattern", value="value")
 
-    def test_neither_pattern_nor_value(self):
+    def test_field_ok(self):
         lc = LogContainer()
-        with pytest.raises(RuntimeError):
-            _ = lc.remove_logs("level")
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+                ResultEntry({"flag": False}),
+            ]
+        )
+        logs = lc.remove_logs("level")
+        assert len(logs) == 1
+        assert not logs[0].flag
+
+    def test_field_not_found(self):
+        lc = LogContainer()
+        lc.add_log(
+            [
+                ResultEntry({"level": "DEBUG"}),
+                ResultEntry({"level": "INFO"}),
+                ResultEntry({"level": "WARN"}),
+                ResultEntry({"flag": False}),
+            ]
+        )
+        logs = lc.remove_logs("invalid")
+        assert len(logs) == 4
 
     def test_pattern_str_ok(self):
         lc = LogContainer()

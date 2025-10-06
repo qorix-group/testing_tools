@@ -1,3 +1,15 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
 use crate::scenario::ScenarioGroup;
 
 fn join_name(left: &str, right: &str) -> String {
@@ -44,7 +56,7 @@ impl TestContext {
     ///
     /// * `name` - Name of the scenario to run.
     /// * `input` - Test scenario input.
-    pub fn run(&self, name: &str, input: Option<String>) -> Result<(), String> {
+    pub fn run(&self, name: &str, input: &str) -> Result<(), String> {
         let scenario = self.root_group.find_scenario(name);
         match scenario {
             Some(scenario) => scenario.run(input),
@@ -72,15 +84,11 @@ mod tests {
             &self.name
         }
 
-        fn run(&self, input: Option<String>) -> Result<(), String> {
-            if let Some(value) = input {
-                match value.as_str() {
-                    "ok" => Ok(()),
-                    "error" => Err("Requested error".to_string()),
-                    _ => Err("Missing input".to_string()),
-                }
-            } else {
-                Err("Missing input".to_string())
+        fn run(&self, input: &str) -> Result<(), String> {
+            match input {
+                "ok" => Ok(()),
+                "error" => Err("Requested error".to_string()),
+                _ => Err("Missing input".to_string()),
             }
         }
     }
@@ -104,19 +112,10 @@ mod tests {
     }
 
     #[test]
-    fn test_run_none_input_err() {
-        let root_group = init_group();
-        let context = TestContext::new(root_group);
-        let result = context.run("inner_group.inner_scenario", None);
-
-        assert!(result.is_err_and(|e| e == "Missing input"));
-    }
-
-    #[test]
     fn test_run_some_input_ok() {
         let root_group = init_group();
         let context = TestContext::new(root_group);
-        let result = context.run("inner_group.inner_scenario", Some("ok".to_string()));
+        let result = context.run("inner_group.inner_scenario", "ok");
 
         assert!(result.is_ok());
     }
@@ -125,7 +124,7 @@ mod tests {
     fn test_run_some_input_err() {
         let root_group = init_group();
         let context = TestContext::new(root_group);
-        let result = context.run("inner_group.inner_scenario", Some("error".to_string()));
+        let result = context.run("inner_group.inner_scenario", "error");
 
         assert!(result.is_err_and(|e| e == "Requested error"));
     }
@@ -134,7 +133,7 @@ mod tests {
     fn test_run_not_found() {
         let root_group = init_group();
         let context = TestContext::new(root_group);
-        let result = context.run("some_scenario", None);
+        let result = context.run("some_scenario", "");
 
         assert!(result.is_err_and(|e| e == "Scenario some_scenario not found"));
     }

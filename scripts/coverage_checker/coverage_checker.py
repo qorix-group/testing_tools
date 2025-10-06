@@ -68,11 +68,11 @@ class InputLine:
         line : str
             The input line to process.
         """
-        line_parts = line.split("\t")
+        line_parts = line.split("|")
 
-        self.data = line_parts[0]
-        self.comment = line_parts[-1] if len(line_parts) > 1 else None
-        self.tab_count = line.count("\t") if self.comment else None
+        self.data = line_parts[0].rstrip()
+        self.comment = line_parts[-1].lstrip() if len(line_parts) > 1 else None
+        self.space_count = (len(line_parts[0]) - len(self.data)) if self.comment else None
 
     def has_comment(self) -> bool:
         """
@@ -84,10 +84,10 @@ class InputLine:
         """
         Get the full line including data and comment.
         """
-        return self.data + (("\t" * self.tab_count + self.comment) if self.has_comment() else "")
+        return self.data + ((" " * self.space_count + "| " + self.comment) if self.has_comment() else "")
 
     def __str__(self) -> str:
-        return f"InputLine(data='{self.data}', comment='{self.comment}', tab_count={self.tab_count})"
+        return f"InputLine(data='{self.data}', comment='{self.comment}', space_count={self.space_count})"
 
 
 class Entry:
@@ -396,7 +396,7 @@ class Tree:
                 node = self._find_node_by_unique_name(ref_node.unique_name)
                 if ref_node.line.has_comment():
                     node.line.comment = ref_node.line.comment
-                    node.line.tab_count = ref_node.line.tab_count
+                    node.line.space_count = ref_node.line.space_count
             except RuntimeError:
                 sys.stderr.write(
                     f"Warning: Reference node with unique name '{ref_node.unique_name}' not found "

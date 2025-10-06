@@ -1,3 +1,15 @@
+// *******************************************************************************
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache License Version 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: Apache-2.0
+// *******************************************************************************
 #pragma once
 
 #include <memory>
@@ -17,9 +29,9 @@ class Scenario {
     /// @return Scenario name.
     virtual std::string name() const = 0;
 
-    /// @brief Runt test scenario.
-    /// @param input Optional test input.
-    virtual void run(const std::optional<std::string>& input) const = 0;
+    /// @brief Run test scenario.
+    /// @param input Test scenario input.
+    virtual void run(const std::string& input) const = 0;
 };
 
 /// @brief Scenario group definition.
