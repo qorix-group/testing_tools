@@ -28,7 +28,7 @@ class Address:
     port: int
 
     @classmethod
-    def from_raw(cls, *address: tuple[int | bytes | str, int]) -> "Address":
+    def from_raw(cls, *address) -> "Address":
         """
         Convert address in tuple format to 'Address' object.
 
