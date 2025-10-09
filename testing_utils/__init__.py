@@ -16,10 +16,12 @@ Test framework tools and helpers for performance stack project.
 
 __all__ = [
     "build_tools",
+    "cap_utils",
     "log_container",
     "result_entry",
     "scenario",
 ]
+from . import cap_utils
 from .build_tools import BazelTools, BuildTools, CargoTools
 from .log_container import LogContainer
 from .result_entry import ResultEntry
