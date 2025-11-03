@@ -11,12 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 """
-'testing-utils' module.
+'score_test_scenarios' module.
 """
 
 module(
-    name = "testing-utils",
-    version = "0.2.8",
+    name = "score_test_scenarios",
+    version = "0.3.0",
 )
 
 # Starlark language server
