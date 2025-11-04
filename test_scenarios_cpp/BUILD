@@ -35,7 +35,7 @@ cc_library(
     ],
     includes = ["include/"],
     visibility = ["//visibility:public"],
-    deps = ["@score-baselibs//score/json:json_parser"],
+    deps = ["@score_baselibs//score/json:json_parser"],
 )
 
 cc_test(
