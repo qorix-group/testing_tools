@@ -20,7 +20,7 @@
 #include <string>
 
 #include "monotonic_clock.hpp"
-#include "score/json/json_writer.h"
+#include <nlohmann/json.hpp>
 
 #define _TRACING(target, level, fields...)                         \
     do {                                                           \
@@ -58,8 +58,7 @@ class Subscriber {
     template <typename... T>
     void event(const std::optional<std::string>& target, const Level& level,
                std::pair<std::string, T>... fields) const {
-        using namespace score::json;
-        Object fields_object{object_create(fields...)};
+        nlohmann::json fields_object = object_create(fields...);
         handle_event(target, level, std::move(fields_object));
     }
 
@@ -69,15 +68,15 @@ class Subscriber {
     MonotonicClock timer_;
 
     void handle_event(const std::optional<std::string>& target, const Level& level,
-                      score::json::Object&& fields) const;
+                      nlohmann::json&& fields) const;
 
-    score::json::Object object_create() const { return score::json::Object{}; }
+    nlohmann::json object_create() const { return nlohmann::json::object(); }
 
     template <typename HeadT, typename... TailT>
-    score::json::Object object_create(std::pair<std::string, HeadT> field,
-                                      std::pair<std::string, TailT>... fields) const {
-        auto object{object_create(fields...)};
-        object.insert(field);
+    nlohmann::json object_create(std::pair<std::string, HeadT> field,
+                                 std::pair<std::string, TailT>... fields) const {
+        auto object = object_create(fields...);
+        object[field.first] = field.second;
         return object;
     }
 };

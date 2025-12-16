@@ -51,8 +51,8 @@ rust.toolchain(
     versions = ["1.85.0"],
 )
 
-# C++ base libs.
-bazel_dep(name = "score_baselibs", version = "0.1.2", dev_dependency = True)
+# Json for C++.
+bazel_dep(name = "nlohmann_json", version = "3.12.0")
 
 # Score Rust crates.
 bazel_dep(name = "score_crates", version = "0.0.6")

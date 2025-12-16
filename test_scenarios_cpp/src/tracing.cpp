@@ -65,15 +65,13 @@ Subscriber::Subscriber(Level max_level, bool thread_ids)
     : max_level_{max_level}, thread_ids_{thread_ids} {}
 
 void Subscriber::handle_event(const std::optional<std::string>& target, const Level& level,
-                              score::json::Object&& fields) const {
-    using namespace score::json;
-
+                              nlohmann::json&& fields) const {
     // Drop handling if below max level.
     if (level < max_level_) {
         return;
     }
 
-    Object event;
+    nlohmann::json event;
 
     // Add timestamp.
     event.emplace("timestamp", timer_.format_time());
@@ -98,17 +96,13 @@ void Subscriber::handle_event(const std::optional<std::string>& target, const Le
     }
 
     // Make JSON string.
-    JsonWriter writer;
-    auto buffer_result{writer.ToBuffer(event)};
-    if (!buffer_result) {
-        throw std::runtime_error{"Failed to stringify JSON"};
-    }
+    std::string json_str = event.dump();
 
     // Minify JSON and add "\n".
     // "\n" + 'std::flush' is used instead of 'std::endl'.
     // This is to avoid message mangling in multithreaded scenarios.
     std::stringstream ss;
-    ss << minify_json(*buffer_result) << "\n";
+    ss << minify_json(json_str) << "\n";
 
     // Print output.
     std::cout << ss.str() << std::flush;
