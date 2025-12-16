@@ -24,7 +24,7 @@ module(
 bazel_dep(name = "score_starpls_lsp", version = "0.1.0", dev_dependency = True)
 
 # Python rules.
-bazel_dep(name = "rules_python", version = "1.0.0", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "1.7.0", dev_dependency = True)
 
 PYTHON_VERSION = "3.12"
 
@@ -36,13 +36,13 @@ python.toolchain(
 use_repo(python)
 
 # C++ GoogleTest dependencies.
-bazel_dep(name = "googletest", version = "1.14.0", dev_dependency = True)
+bazel_dep(name = "googletest", version = "1.17.0", dev_dependency = True)
 
 # Rust rules.
-bazel_dep(name = "rules_rust", version = "0.56.0")
+bazel_dep(name = "rules_rust", version = "0.67.0")
 
 # C/C++ rules.
-bazel_dep(name = "rules_cc", version = "0.1.1", dev_dependency = True)
+bazel_dep(name = "rules_cc", version = "0.2.14")
 
 # Rust module dependencies.
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
@@ -51,8 +51,8 @@ rust.toolchain(
     versions = ["1.85.0"],
 )
 
-# C++ base libs.
-bazel_dep(name = "score_baselibs", version = "0.1.2", dev_dependency = True)
+# Json for C++.
+bazel_dep(name = "nlohmann_json", version = "3.12.0")
 
 # Score Rust crates.
-bazel_dep(name = "score_crates", version = "0.0.4")
+bazel_dep(name = "score_crates", version = "0.0.6")
