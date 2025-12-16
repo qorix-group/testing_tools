@@ -335,7 +335,7 @@ class BazelTools(BuildTools):
 
         return target_path
 
-    def build(self, target_name: str) -> Path:
+    def build(self, target_name: str, *options) -> Path:
         """
         Run build for selected target.
 
@@ -345,7 +345,7 @@ class BazelTools(BuildTools):
             Name of the target to build.
         """
         # Run build.
-        command = ["bazel", "build", target_name]
+        command = ["bazel", "build", target_name, *options]
         with Popen(command, text=True) as p:
             _, _ = p.communicate(timeout=self.build_timeout)
             if p.returncode != 0:
