@@ -472,4 +472,13 @@ class TestBazelTools(TestBuildTools):
         target_name, project_path = tmp_project
         return project_path / "bazel-out" / "k8-fastbuild" / "bin" / target_name
 
+    def test_build_additional_params(self, tools_type: type[BuildTools], tmp_project: tuple[str, Path]) -> None:
+        target_name, path = tmp_project
+        with cwd(path):
+            tools = tools_type()
+            target_path = tools.build(target_name, "--verbose_failures", "--action_env=TEST_VAR=TEST_VALUE")
+
+            # Check executable exists.
+            assert target_path.exists()
+
     # TODO: add query tests.  # noqa: FIX002
