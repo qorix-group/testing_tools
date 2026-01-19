@@ -21,8 +21,12 @@ __all__ = [
     "result_entry",
     "scenario",
 ]
+import logging
+
 from . import cap_utils
 from .build_tools import BazelTools, BuildTools, CargoTools
 from .log_container import LogContainer
 from .result_entry import ResultEntry
 from .scenario import Scenario, ScenarioResult
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())

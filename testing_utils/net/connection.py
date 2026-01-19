@@ -10,12 +10,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
+import logging
 from socket import (
     SOCK_STREAM,
     socket,
 )
 
 from .address import Address
+
+logger = logging.getLogger(__package__)
 
 
 def create_connection(address: Address, timeout: float | None = 3.0) -> socket:
@@ -32,4 +35,5 @@ def create_connection(address: Address, timeout: float | None = 3.0) -> socket:
     s = socket(address.family(), SOCK_STREAM)
     s.settimeout(timeout)
     s.connect(address.to_raw())
+    logger.debug(f"Created connection to {address} with {timeout=}s")
     return s
