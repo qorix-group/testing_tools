@@ -10,6 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
+import logging
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from socket import (
@@ -20,6 +21,7 @@ from socket import (
 from typing import Any
 
 type IPAddress = IPv4Address | IPv6Address
+logger = logging.getLogger(__package__)
 
 
 @dataclass

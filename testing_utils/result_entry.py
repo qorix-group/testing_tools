@@ -16,8 +16,11 @@ Structured representation of test log entries.
 
 __all__ = ["ResultEntry"]
 
+import logging
 import re
 from typing import Any
+
+logger = logging.getLogger(__package__)
 
 
 class ResultEntry:

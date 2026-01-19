@@ -17,6 +17,7 @@ Utilities for interacting with build systems.
 __all__ = ["BuildTools", "CargoTools", "BazelTools"]
 
 import json
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
@@ -24,6 +25,7 @@ from typing import Any
 
 import pytest
 
+logger = logging.getLogger(__package__)
 # region common
 
 
@@ -47,6 +49,11 @@ class BuildTools(ABC):
         build_timeout : float
             Build command timeout in seconds.
         """
+        logger.debug(
+            f"Initializing BuildTools: option_prefix={option_prefix}, "
+            f"command_timeout={command_timeout}, "
+            f"build_timeout={build_timeout}"
+        )
         if option_prefix:
             self._target_path_flag = f"--{option_prefix}-target-path"
             self._target_name_flag = f"--{option_prefix}-target-name"
@@ -177,6 +184,7 @@ class CargoTools(BuildTools):
         """
         # Run command.
         command = ["cargo", "metadata", "--format-version", "1"]
+        logger.debug(f"Running Cargo metadata command: `{' '.join(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             stdout, _ = p.communicate(timeout=self.command_timeout)
             if p.returncode != 0:
@@ -209,6 +217,7 @@ class CargoTools(BuildTools):
         if expect_exists and not target_path.exists():
             raise RuntimeError(f"Executable not found: {target_path}")
 
+        logger.debug(f"Found target path: {target_path}")
         return target_path
 
     def build(self, target_name: str) -> Path:
@@ -237,6 +246,7 @@ class CargoTools(BuildTools):
 
         # Run build.
         command = ["cargo", "build", "--manifest-path", manifest_path]
+        logger.debug(f"Running Cargo build command: `{' '.join(command)}`")
         with Popen(command, text=True) as p:
             _, _ = p.communicate(timeout=self.build_timeout)
             if p.returncode != 0:
@@ -284,6 +294,7 @@ class BazelTools(BuildTools):
         """
         # Run command.
         command = ["bazel", "query", query]
+        logger.debug(f"Running Bazel query command: `{' '.join(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             stdout, _ = p.communicate(timeout=self.command_timeout)
             if p.returncode != 0:
@@ -322,6 +333,7 @@ class BazelTools(BuildTools):
             "--starlark:expr=target.files_to_run.executable.path",
             target_name,
         ]
+        logger.debug(f"Running Bazel cquery command: `{' '.join(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             target_str, _ = p.communicate(timeout=self.command_timeout)
             target_str = target_str.strip()
@@ -333,6 +345,7 @@ class BazelTools(BuildTools):
         if expect_exists and not target_path.exists():
             raise RuntimeError(f"Executable not found: {target_path}")
 
+        logger.debug(f"Found target path: {target_path}")
         return target_path
 
     def build(self, target_name: str, *options) -> Path:
@@ -346,6 +359,7 @@ class BazelTools(BuildTools):
         """
         # Run build.
         command = ["bazel", "build", target_name, *options]
+        logger.debug(f"Running Bazel build command: `{' '.join(command)}`")
         with Popen(command, text=True) as p:
             _, _ = p.communicate(timeout=self.build_timeout)
             if p.returncode != 0:

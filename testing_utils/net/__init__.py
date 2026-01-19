@@ -18,5 +18,9 @@ __all__ = [
     "address",
     "connection",
 ]
+import logging
+
 from .address import Address, IPAddress
 from .connection import create_connection
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())

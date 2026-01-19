@@ -4,9 +4,13 @@ Module for executable capabilities handling.
 
 __all__ = ["get_caps", "set_caps"]
 
+
+import logging
 import re
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, Popen
+
+logger = logging.getLogger(__package__)
 
 
 def get_caps(executable_path: Path | str) -> dict[str, str]:
@@ -42,6 +46,7 @@ def get_caps(executable_path: Path | str) -> dict[str, str]:
         for name in names.split(","):
             result[name] = perms
 
+    logger.debug(f"Capabilities for {executable_path}: {result}")
     return result
 
 
@@ -70,6 +75,7 @@ def set_caps(executable_path: Path | str, caps: dict[str, str]) -> None:
         caps_str,
         str(executable_path),
     ]
+    logger.debug(f"Setting capabilities: `{' '.join(command)}`")
     with Popen(command) as p:
         _, _ = p.communicate()
         if p.returncode != 0:
