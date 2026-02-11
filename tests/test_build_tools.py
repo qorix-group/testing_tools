@@ -404,6 +404,15 @@ class TestCargoTools(TestBuildTools):
                 with pytest.raises(pytest.UsageError):
                     _ = tools.select_target_path(cfg, expect_exists=True)  # type: ignore
 
+    def test_build_additional_params(self, tools_type: type[BuildTools], tmp_project: tuple[str, Path]) -> None:
+        target_name, path = tmp_project
+        with cwd(path):
+            tools = tools_type()
+            target_path = tools.build(target_name, "--verbose")
+
+            # Check executable exists.
+            assert target_path.exists()
+
 
 class TestBazelTools(TestBuildTools):
     """

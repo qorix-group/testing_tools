@@ -63,6 +63,17 @@ class BuildTools(ABC):
         self._command_timeout = command_timeout
         self._build_timeout = build_timeout
 
+    def _command_str(self, command: list[Any]) -> str:
+        """
+        Create a command string from command parts.
+
+        Parameters
+        ----------
+        command : list[Any]
+            Command as a list.
+        """
+        return " ".join(str(c) for c in command)
+
     @property
     def command_timeout(self) -> float:
         """
@@ -138,7 +149,7 @@ class BuildTools(ABC):
         raise pytest.UsageError(f'Either "{self._target_path_flag}" or "{self._target_name_flag}" must be set')
 
     @abstractmethod
-    def build(self, target_name: str) -> Path:
+    def build(self, target_name: str, *build_parameters: str) -> Path:
         """
         Run build for selected target.
         Returns path to built executable.
@@ -147,6 +158,8 @@ class BuildTools(ABC):
         ----------
         target_name : str
             Name of the target to build.
+        build_parameters : str
+            Additional parameters to pass to build command.
         """
 
 
@@ -184,7 +197,7 @@ class CargoTools(BuildTools):
         """
         # Run command.
         command = ["cargo", "metadata", "--format-version", "1"]
-        logger.debug(f"Running Cargo metadata command: `{' '.join(command)}`")
+        logger.debug(f"Running Cargo metadata command: `{self._command_str(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             stdout, _ = p.communicate(timeout=self.command_timeout)
             if p.returncode != 0:
@@ -220,7 +233,7 @@ class CargoTools(BuildTools):
         logger.debug(f"Found target path: {target_path}")
         return target_path
 
-    def build(self, target_name: str) -> Path:
+    def build(self, target_name: str, *build_parameters: str) -> Path:
         """
         Run build for selected target.
         Manifest path is taken from Cargo metadata.
@@ -230,6 +243,8 @@ class CargoTools(BuildTools):
         ----------
         target_name : str
             Name of the target to build.
+        build_parameters : list[str] | None
+            Additional parameters to pass to build command.
         """
         # Read metadata.
         metadata = self.metadata()
@@ -245,8 +260,8 @@ class CargoTools(BuildTools):
         manifest_path = Path(pkg_entry["manifest_path"]).resolve()
 
         # Run build.
-        command = ["cargo", "build", "--manifest-path", manifest_path]
-        logger.debug(f"Running Cargo build command: `{' '.join(command)}`")
+        command = ["cargo", "build", "--manifest-path", manifest_path, *build_parameters]
+        logger.debug(f"Running Cargo build command: `{self._command_str(command)}`")
         with Popen(command, text=True) as p:
             _, _ = p.communicate(timeout=self.build_timeout)
             if p.returncode != 0:
@@ -265,7 +280,13 @@ class BazelTools(BuildTools):
     Utilities for interacting with Bazel.
     """
 
-    def __init__(self, option_prefix: str = "", command_timeout: float = 10.0, build_timeout: float = 180.0) -> None:
+    def __init__(
+        self,
+        option_prefix: str = "",
+        config: str = "",
+        command_timeout: float = 10.0,
+        build_timeout: float = 180.0,
+    ) -> None:
         """
         Create Bazel tools instance.
 
@@ -275,12 +296,18 @@ class BazelTools(BuildTools):
             Prefix for options expected by 'select_target_path'.
             - '' will expect '--target-path' and '--target-name'.
             - 'cpp' will expect '--cpp-target-path' and '--cpp-target-name'.
+        config : str
+            Explicitly define config used by Bazel commands.
+            E.g., "per-x86_64-linux" adds "--config=per-x86_64-linux".
         command_timeout : float
             Common command timeout in seconds.
         build_timeout : float
             "bazel build" timeout in seconds.
         """
         super().__init__(option_prefix, command_timeout, build_timeout)
+        # Store 'config' as command parameter nested in a list.
+        # This is required to avoid empty parts ('') of commands.
+        self.config_param = [f"--config={config}"] if config else []
 
     def query(self, query: str = "//...") -> list[str]:
         """
@@ -294,7 +321,7 @@ class BazelTools(BuildTools):
         """
         # Run command.
         command = ["bazel", "query", query]
-        logger.debug(f"Running Bazel query command: `{' '.join(command)}`")
+        logger.debug(f"Running Bazel query command: `{self._command_str(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             stdout, _ = p.communicate(timeout=self.command_timeout)
             if p.returncode != 0:
@@ -331,9 +358,10 @@ class BazelTools(BuildTools):
             "cquery",
             "--output=starlark",
             "--starlark:expr=target.files_to_run.executable.path",
+            *self.config_param,
             target_name,
         ]
-        logger.debug(f"Running Bazel cquery command: `{' '.join(command)}`")
+        logger.debug(f"Running Bazel cquery command: `{self._command_str(command)}`")
         with Popen(command, stdout=PIPE, text=True) as p:
             target_str, _ = p.communicate(timeout=self.command_timeout)
             target_str = target_str.strip()
@@ -348,7 +376,7 @@ class BazelTools(BuildTools):
         logger.debug(f"Found target path: {target_path}")
         return target_path
 
-    def build(self, target_name: str, *options) -> Path:
+    def build(self, target_name: str, *build_parameters: str) -> Path:
         """
         Run build for selected target.
 
@@ -356,10 +384,12 @@ class BazelTools(BuildTools):
         ----------
         target_name : str
             Name of the target to build.
+        build_parameters : str
+            Additional parameters to pass to build command.
         """
         # Run build.
-        command = ["bazel", "build", target_name, *options]
-        logger.debug(f"Running Bazel build command: `{' '.join(command)}`")
+        command = ["bazel", "build", *self.config_param, target_name, *build_parameters]
+        logger.debug(f"Running Bazel build command: `{self._command_str(command)}`")
         with Popen(command, text=True) as p:
             _, _ = p.communicate(timeout=self.build_timeout)
             if p.returncode != 0:
