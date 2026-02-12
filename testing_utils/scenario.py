@@ -17,6 +17,7 @@ Utilities for defining and running test scenarios.
 __all__ = ["ScenarioResult", "Scenario"]
 
 import json
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
@@ -29,6 +30,8 @@ import pytest
 from .build_tools import BuildTools
 from .log_container import LogContainer
 from .result_entry import ResultEntry
+
+logger = logging.getLogger(__package__)
 
 
 @dataclass
@@ -142,14 +145,17 @@ class Scenario(ABC):
         """
         hang = False
         stderr_param = PIPE if self.capture_stderr() else None
+        logger.info(f"Running command: `{' '.join(command)}` with timeout {execution_timeout}s")
         with Popen(command, stdout=PIPE, stderr=stderr_param, text=True) as p:
             try:
                 stdout, stderr = p.communicate(timeout=execution_timeout)
             except TimeoutExpired:
+                logger.warning(f"Command timed out after {execution_timeout}s")
                 hang = True
                 p.kill()
                 stdout, stderr = p.communicate()
 
+        logger.debug(f"Command finished with return code {p.returncode}")
         return ScenarioResult(stdout, stderr, p.returncode, hang)
 
     @pytest.fixture(scope="class")
@@ -198,4 +204,5 @@ class Scenario(ABC):
 
         # Convert messages to list of ResultEntry and create log container.
         result_entries = [ResultEntry(msg) for msg in messages]
+        logger.debug(f"Captured {len(result_entries)} log entries from scenario results")
         return LogContainer(result_entries)

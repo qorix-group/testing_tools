@@ -7,6 +7,34 @@ Test framework tools and helpers for performance stack project.
 This repository provided utilities to assist with test automation, log handling, and result parsing.
 It is designed to be a set of helper libraries for test frameworks or custom test runners.
 
+
+## Logging
+
+`testing-utils` uses Python's standard logging module. All modules log via a package logger, which you can configure in your application.
+By default, the logger uses a `NullHandler`. To see logs, configure logging in your main script:
+
+```python
+import logging
+logging.basicConfig(level=logging.INFO)
+```
+
+or provide logging config in pytest configuration:
+
+```ini
+log_cli = true
+log_cli_level = DEBUG
+log_cli_format = %(asctime)s %(levelname)s %(message)s
+log_cli_date_format = %Y-%m-%d %H:%M:%S
+```
+
+You can also attach handlers or change the log level for the `testing_utils` logger specifically:
+
+```python
+import logging
+logger = logging.getLogger("testing_utils")
+logger.setLevel(logging.DEBUG)
+```
+
 ## Features
 
 - **Test scenarios libraries**: Rust and C++ libraries for implementing test scenarios.

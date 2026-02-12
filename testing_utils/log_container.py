@@ -16,12 +16,15 @@ A container for storing and querying logs.
 
 __all__ = ["LogContainer"]
 
+import logging
 import re
 from itertools import groupby
 from operator import attrgetter
 from typing import Any
 
 from .result_entry import ResultEntry
+
+logger = logging.getLogger(__package__)
 
 
 class _NotSet:
@@ -98,6 +101,7 @@ class LogContainer:
 
             if not reverse:
                 logs.append(log)
+        logger.debug(f"Filtered {len(logs)} logs by {'NOT' if reverse else ''}{field=}")
         return logs
 
     def _logs_by_field_regex_match(self, field: str, pattern: str, *, reverse: bool) -> list[ResultEntry]:
@@ -131,6 +135,7 @@ class LogContainer:
             found = regex.search(str(found_value)) is not None
             if found ^ reverse:
                 logs.append(log)
+        logger.debug(f"Filtered {len(logs)} logs by {field=} with {'reversed' if reverse else ''}{pattern=}")
         return logs
 
     def _logs_by_field_exact_match(self, field: str, value: Any, *, reverse: bool) -> list[ResultEntry]:
@@ -159,6 +164,7 @@ class LogContainer:
             found = isinstance(found_value, type(value)) and found_value == value
             if found ^ reverse:
                 logs.append(log)
+        logger.debug(f"Filtered {len(logs)} logs by {field=} with {'reversed' if reverse else ''}{value=}")
         return logs
 
     def _logs_by_field(
