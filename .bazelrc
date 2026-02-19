@@ -1,3 +1,25 @@
+# *******************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
+
+# -------------------------------------------------------------------------------
+# Links to S-CORE Bazel registry and Bazel Central Regoe
+# -------------------------------------------------------------------------------
+common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
+common --registry=https://bcr.bazel.build
+
+# -------------------------------------------------------------------------------
+# Default build flags (all configurations)
+# -------------------------------------------------------------------------------
 build --java_language_version=17
 build --tool_java_language_version=17
 build --java_runtime_version=remotejdk_17
@@ -5,5 +27,33 @@ build --tool_java_runtime_version=remotejdk_17
 
 test --test_output=errors
 
-common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
-common --registry=https://bcr.bazel.build
+# -------------------------------------------------------------------------------
+# Shared configuration for simple test execution
+# -------------------------------------------------------------------------------
+build:_common --incompatible_strict_action_env
+build:_common --sandbox_writable_path=/var/tmp
+build:_common --host_platform=@score_bazel_platforms//:x86_64-linux
+
+# -------------------------------------------------------------------------------
+# Config dedicated to host platform CPU:x86_64 and OS:Linux
+# -------------------------------------------------------------------------------
+build:x86_64-linux --config=_common
+build:x86_64-linux --platforms=@score_bazel_platforms//:x86_64-linux-gcc_12.2.0-posix
+build:x86_64-linux --extra_toolchains=@score_gcc_x86_64_toolchain//:x86_64-linux-gcc_12.2.0-posix
+build:x86_64-linux --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
+
+# -------------------------------------------------------------------------------
+# Config dedicated to target platform CPU:x86_64 and OS:QNX
+# -------------------------------------------------------------------------------
+build:x86_64-qnx --config=_common
+build:x86_64-qnx --platforms=@score_bazel_platforms//:x86_64-qnx-sdp_8.0.0-posix
+build:x86_64-qnx --extra_toolchains=@score_qcc_x86_64_toolchain//:x86_64-qnx-sdp_8.0.0-posix
+build:x86_64-qnx --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_pc_nto_qnx800
+
+# -------------------------------------------------------------------------------
+# Config dedicated to target platform CPU:arm64 and OS:QNX
+# -------------------------------------------------------------------------------
+build:arm64-qnx --config=_common
+build:arm64-qnx --platforms=@score_bazel_platforms//:aarch64-qnx-sdp_8.0.0-posix
+build:arm64-qnx --extra_toolchains=@score_qcc_aarch64_toolchain//:aarch64-qnx-sdp_8.0.0-posix
+build:arm64-qnx --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_aarch64_unknown_nto_qnx800

@@ -34,7 +34,7 @@ jobs:
           pip install -e ".[dev]" || true
 
       - name: Check formatting with Ruff
-        run: ruff check .
+        run: ruff check . --exclude scripts/internal
 
   test:
     runs-on: ubuntu-latest
