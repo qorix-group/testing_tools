@@ -30,8 +30,8 @@ jobs:
 
       - name: Run build
         run: |
-          bazel build //...
+          bazel build //... --config=x86_64-linux
 
       - name: Run tests
         run: |
-          bazel test //...
+          bazel test //... --config=x86_64-linux

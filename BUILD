@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@score_starpls_lsp//:starpls.bzl", "setup_starpls")
+load("@score_tooling//:defs.bzl", "setup_starpls")
 
 setup_starpls(
     name = "starpls_server",
