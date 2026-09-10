@@ -12,6 +12,7 @@
 # *******************************************************************************
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//tools/lint:linters.bzl", "clang_tidy_test")
 
 cc_library(
     name = "test_scenarios_cpp",
@@ -51,4 +52,14 @@ cc_test(
         ":test_scenarios_cpp",
         "@googletest//:gtest_main",
     ],
+)
+
+clang_tidy_test(
+    name = "clang_tidy",
+    # :tests (cc_test) isn't covered by the aspect's default rule_kinds.
+    srcs = [
+        ":test_scenarios_cpp",
+    ],
+    # manual: needs the llvm toolchain, which --config=clang-tidy registers.
+    tags = ["manual"],
 )

@@ -35,3 +35,34 @@ jobs:
       - name: Run tests
         run: |
           bazel test //... --config=x86_64-linux
+
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-version: 1.26.0 # newest LTS before 1 Jun 2025
+
+      - name: Run clang-tidy
+        run: |
+          bazel test --config=clang-tidy //score/test_scenarios_cpp:clang_tidy
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.87.0
+        with:
+          components: clippy
+
+      - name: Run clippy
+        working-directory: score/test_scenarios_rust
+        run: |
+          cargo clippy --locked --all-targets -- -D warnings
