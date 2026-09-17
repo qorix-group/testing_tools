@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 
 rust_library(
     name = "test_scenarios_rust",
@@ -20,6 +20,13 @@ rust_library(
         "@score_crates//:tracing",
         "@score_crates//:tracing_subscriber",
     ],
+)
+
+rust_binary(
+    name = "basic",
+    srcs = ["examples/basic.rs"],
+    visibility = ["//visibility:public"],
+    deps = [":test_scenarios_rust"],
 )
 
 rust_test(
