@@ -44,7 +44,10 @@ cc_binary(
     name = "basic",
     srcs = ["examples/basic.cpp"],
     visibility = ["//visibility:public"],
-    deps = [":test_scenarios_cpp"],
+    deps = [
+        ":test_scenarios_cpp",
+        "@nlohmann_json//:json",
+    ],
 )
 
 cc_test(

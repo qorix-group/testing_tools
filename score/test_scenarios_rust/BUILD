@@ -26,7 +26,12 @@ rust_binary(
     name = "basic",
     srcs = ["examples/basic.rs"],
     visibility = ["//visibility:public"],
-    deps = [":test_scenarios_rust"],
+    deps = [
+        ":test_scenarios_rust",
+        "@score_crates//:serde",
+        "@score_crates//:serde_json",
+        "@score_crates//:tracing",
+    ],
 )
 
 rust_test(

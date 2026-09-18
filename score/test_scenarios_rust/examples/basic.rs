@@ -13,67 +13,71 @@
 
 use std::process::ExitCode;
 
-use test_scenarios_rust::cli::run_cli_app;
+use serde::Deserialize;
+use tracing::info;
+
+use test_scenarios_rust::cli::{create_tracing_subscriber, run_cli_app};
 use test_scenarios_rust::scenario::{Scenario, ScenarioGroupImpl};
 use test_scenarios_rust::test_context::TestContext;
 
-const MIN_VERSION: (u32, u32, u32) = (8, 6, 0);
-
-fn parse_version(input: &str) -> Result<(u32, u32, u32), String> {
-    let parts: Vec<&str> = input.split('.').collect();
-    let err = || format!("'{input}' is not a valid major.minor.patch version");
-    if parts.len() != 3 {
-        return Err(err());
-    }
-    let mut numbers = [0u32; 3];
-    for (i, part) in parts.iter().enumerate() {
-        numbers[i] = part.parse::<u32>().map_err(|_| err())?;
-    }
-    Ok((numbers[0], numbers[1], numbers[2]))
+#[derive(Deserialize)]
+struct ItemsInput {
+    items: Vec<String>,
 }
 
-/// Parses "major.minor.patch" and reports the components.
-struct ParseScenario;
+impl ItemsInput {
+    fn parse(input: &str) -> Result<Self, String> {
+        serde_json::from_str(input).map_err(|e| format!("invalid input: {e}"))
+    }
+}
 
-impl Scenario for ParseScenario {
+/// Logs each item with its index via structured tracing.
+struct EnumerateScenario;
+
+impl Scenario for EnumerateScenario {
     fn name(&self) -> &str {
-        "parse"
+        "enumerate"
     }
 
     fn run(&self, input: &str) -> Result<(), String> {
-        let (major, minor, patch) = parse_version(input)?;
-        println!("major={major} minor={minor} patch={patch}");
+        let parsed = ItemsInput::parse(input)?;
+        for (index, item) in parsed.items.iter().enumerate() {
+            info!(index, item = item.as_str());
+        }
         Ok(())
     }
 }
 
-/// Fails if the input version is below the minimum supported version.
-struct SatisfiesMinimumScenario;
+/// Fails if the input has no items.
+struct RequireNonEmptyScenario;
 
-impl Scenario for SatisfiesMinimumScenario {
+impl Scenario for RequireNonEmptyScenario {
     fn name(&self) -> &str {
-        "satisfies_minimum"
+        "require_non_empty"
     }
 
     fn run(&self, input: &str) -> Result<(), String> {
-        let version = parse_version(input)?;
-        if version < MIN_VERSION {
-            return Err(format!("'{input}' is below the minimum supported version 8.6.0"));
+        let parsed = ItemsInput::parse(input)?;
+        if parsed.items.is_empty() {
+            return Err("items must not be empty".to_string());
         }
-        println!("'{input}' satisfies the minimum supported version 8.6.0");
+        info!(count = parsed.items.len());
         Ok(())
     }
 }
 
 fn main() -> ExitCode {
+    tracing::subscriber::set_global_default(create_tracing_subscriber())
+        .expect("Setting default subscriber failed!");
+
     let raw_arguments: Vec<String> = std::env::args().collect();
 
-    let version_group = ScenarioGroupImpl::new(
-        "version",
-        vec![Box::new(ParseScenario), Box::new(SatisfiesMinimumScenario)],
+    let list_group = ScenarioGroupImpl::new(
+        "list",
+        vec![Box::new(EnumerateScenario), Box::new(RequireNonEmptyScenario)],
         Vec::new(),
     );
-    let root_group = ScenarioGroupImpl::new("root", Vec::new(), vec![Box::new(version_group)]);
+    let root_group = ScenarioGroupImpl::new("root", Vec::new(), vec![Box::new(list_group)]);
     let test_context = TestContext::new(Box::new(root_group));
 
     match run_cli_app(&raw_arguments, &test_context) {

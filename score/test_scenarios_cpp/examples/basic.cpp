@@ -14,58 +14,59 @@
 #include <cli.hpp>
 #include <scenario.hpp>
 #include <test_context.hpp>
+#include <tracing.hpp>
 
+#include <nlohmann/json.hpp>
+
+#include <cstddef>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace {
 
-constexpr int kMinMajor = 8;
-constexpr int kMinMinor = 6;
-constexpr int kMinPatch = 0;
+const std::string kTargetName{"examples::basic::list"};
 
-std::tuple<int, int, int> parse_version(const std::string& input) {
-    int major = 0;
-    int minor = 0;
-    int patch = 0;
-    char dot1 = 0;
-    char dot2 = 0;
-    std::istringstream iss{input};
-    iss >> major >> dot1 >> minor >> dot2 >> patch;
-    if (iss.fail() || dot1 != '.' || dot2 != '.' || !iss.eof()) {
-        throw std::runtime_error{"'" + input + "' is not a valid major.minor.patch version"};
+std::vector<std::string> parse_items(const std::string& input) {
+    nlohmann::json parsed;
+    try {
+        parsed = nlohmann::json::parse(input);
+    } catch (const nlohmann::json::exception& e) {
+        throw std::runtime_error{"invalid input: " + std::string{e.what()}};
     }
-    return {major, minor, patch};
+    if (!parsed.contains("items")) {
+        throw std::runtime_error{"invalid input: missing 'items' field"};
+    }
+    return parsed.at("items").get<std::vector<std::string>>();
 }
 
-// Parses "major.minor.patch" and reports the components.
-class ParseScenario final : public Scenario {
+// Logs each item with its index via structured tracing.
+class EnumerateScenario final : public Scenario {
    public:
-    std::string name() const override { return "parse"; }
+    std::string name() const override { return "enumerate"; }
 
     void run(const std::string& input) const override {
-        auto [major, minor, patch] = parse_version(input);
-        std::cout << "major=" << major << " minor=" << minor << " patch=" << patch << std::endl;
+        auto items{parse_items(input)};
+        for (std::size_t index = 0; index < items.size(); ++index) {
+            TRACING_INFO(kTargetName, std::pair{std::string{"index"}, index},
+                         std::pair{std::string{"item"}, items[index]});
+        }
     }
 };
 
-// Fails if the input version is below the minimum supported version.
-class SatisfiesMinimumScenario final : public Scenario {
+// Fails if the input has no items.
+class RequireNonEmptyScenario final : public Scenario {
    public:
-    std::string name() const override { return "satisfies_minimum"; }
+    std::string name() const override { return "require_non_empty"; }
 
     void run(const std::string& input) const override {
-        const std::tuple<int, int, int> version{parse_version(input)};
-        const std::tuple<int, int, int> minimum{kMinMajor, kMinMinor, kMinPatch};
-        if (version < minimum) {
-            throw std::runtime_error{"'" + input + "' is below the minimum supported version 8.6.0"};
+        auto items{parse_items(input)};
+        if (items.empty()) {
+            throw std::runtime_error{"items must not be empty"};
         }
-        std::cout << "'" << input << "' satisfies the minimum supported version 8.6.0" << std::endl;
+        TRACING_INFO(kTargetName, std::pair{std::string{"count"}, items.size()});
     }
 };
 
@@ -74,13 +75,13 @@ class SatisfiesMinimumScenario final : public Scenario {
 int main(int argc, char* argv[]) {
     std::vector<std::string> raw_arguments{argv, argv + argc};
 
-    ScenarioGroup::Ptr version_group{new ScenarioGroupImpl{
-        "version",
-        std::vector<Scenario::Ptr>{std::make_shared<ParseScenario>(),
-                                    std::make_shared<SatisfiesMinimumScenario>()},
+    ScenarioGroup::Ptr list_group{new ScenarioGroupImpl{
+        "list",
+        std::vector<Scenario::Ptr>{std::make_shared<EnumerateScenario>(),
+                                    std::make_shared<RequireNonEmptyScenario>()},
         std::vector<ScenarioGroup::Ptr>{}}};
     ScenarioGroup::Ptr root_group{new ScenarioGroupImpl{
-        "root", std::vector<Scenario::Ptr>{}, std::vector<ScenarioGroup::Ptr>{version_group}}};
+        "root", std::vector<Scenario::Ptr>{}, std::vector<ScenarioGroup::Ptr>{list_group}}};
     TestContext test_context{root_group};
 
     try {
